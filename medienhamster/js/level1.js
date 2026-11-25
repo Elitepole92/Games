@@ -159,7 +159,7 @@ export function level1(G, LV) {
     shape.moveTo(-w, -z1); for (let i = 0; i <= 10; i++) shape.lineTo(-w + i * w * 0.2, -(z1 - 0.3 + Math.sin(i * 1.7) * 0.25)); for (let i = 0; i <= 10; i++) shape.lineTo(w - i * w * 0.2, -(z2 + 0.3 + Math.sin(i * 2.3) * 0.25));
     const geo = new THREE.ShapeGeometry(shape); geo.rotateX(-Math.PI / 2); geo.translate(0, 0.008, 0);
     const water = new THREE.Mesh(geo, MAT.water); water.receiveShadow = true; scene.add(water);
-    const flash = new THREE.Mesh(geo.clone().translate(0, 0.004, 0), glowMat(0.25, 0.55, 1.6, 0.35)); flash.visible = false; scene.add(flash);
+    const flash = new THREE.Mesh(geo.clone().translate(0, 0.004, 0), glowMat(0.12, 0.3, 0.85, 0.22)); flash.visible = false; scene.add(flash);
     const cx = w - 0.3, cz = (z1 + z2) / 2;
     K.geo(tubeBetween(new THREE.Vector3(w + 0.1, 2.2, cz), new THREE.Vector3(w - 0.1, 0.05, cz + 0.4), 0.05), MAT.black);
     K.geo(new THREE.CylinderGeometry(0.06, 0.04, 0.2, 8), MAT.pipeYellow, mat4(cx, 0.05, cz + 0.5, Math.PI / 2, 0, 0.4));
@@ -175,7 +175,7 @@ export function level1(G, LV) {
         zn.state = live ? 2 : warn ? 1 : 0;
         const near = Math.abs(p.z - zn.cz) < 14;
         if (warn && F % 9 === 0 && near) { G.burst(zn.cx, 0.15, zn.cz + 0.5, 'blue', 3); if (F % 18 === 0) sfx('spark', 0.4 * (1 - Math.abs(p.z - zn.cz) / 14)); }
-        if (live && F % 5 === 0 && near) { G.burst(zn.cx, 0.2, zn.cz + 0.5, 'blue', 4); if (F % 10 === 0) sfx('spark', 0.8 * (1 - Math.abs(p.z - zn.cz) / 14)); }
+        if (live && F % 7 === 0 && near) { G.burst(zn.cx, 0.2, zn.cz + 0.5, 'blue', 3); if (F % 10 === 0) sfx('spark', 0.8 * (1 - Math.abs(p.z - zn.cz) / 14)); }
         const inZone = p.z > zn.z1 - 0.2 && p.z < zn.z2 + 0.2 && p.y < 0.05 && p.ground;
         if (inZone && Math.hypot(p.vx, p.vz) > 0.03 && F % 18 === 0) sfx('splash', 0.5);
         if (live && inZone) { G.hurt(0, -0.25); G.burst(p.x, 0.5, p.z, 'blue', 10); }
@@ -217,9 +217,8 @@ export function level1(G, LV) {
     K.box(2.3, 0.26, len, MAT.darkMetal, x, 0.13, (z1 + z2) / 2, 0, 0, true);
     const tex = T.belt.clone(); tex.needsUpdate = true; tex.repeat.set(1, len / 2); beltTex.push([tex, v]);
     const belt = new THREE.Mesh(new THREE.PlaneGeometry(2.0, len), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8 })); belt.rotation.x = -Math.PI / 2; belt.position.set(x, 0.302, (z1 + z2) / 2); belt.receiveShadow = true; scene.add(belt);
-    for (const s of [-1, 1]) K.box(0.08, 0.12, len, MAT.alu, x + s * 1.07, 0.33, (z1 + z2) / 2, 0, 0, false);
+    for (const s of [-1, 1]) K.box(0.08, 0.12, len, MAT.darkMetal, x + s * 1.07, 0.33, (z1 + z2) / 2, 0, 0, false);
     for (const zz of [z1 + 0.15, z2 - 0.15]) K.geo(new THREE.CylinderGeometry(0.15, 0.15, 2.1, 14), MAT.chrome, mat4(x, 0.17, zz, 0, 0, Math.PI / 2));
-    K.box(0.4, 0.02, 0.12, MAT.glowGreen, x, 0.31, z1 + 0.25, 0, 0, false);
   }
   A.push(() => { for (const [t, v] of beltTex) t.offset.y = (t.offset.y - v / 2) % 1; });
   [[0, 0], [0, 12], [2.4, 6], [2.4, 21], [0, 24]].forEach(([x, off], i) => {

@@ -18,7 +18,8 @@ export function makeBus(c, dest) {
   const g = (v = 1) => { const n = c.createGain(); n.gain.value = v; return n; };
   const master = g(0.9), comp = c.createDynamicsCompressor();
   comp.threshold.value = -16; comp.knee.value = 10; comp.ratio.value = 4; comp.attack.value = 0.004; comp.release.value = 0.2;
-  master.connect(comp); comp.connect(dest);
+  const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 40; hp.Q.value = 0.7;   // Tiefstbass raus (unhörbar, frisst Lautstärke)
+  master.connect(hp); hp.connect(comp); comp.connect(dest);
   const music = g(AU.musicOn ? 0.62 : 0), sfx = g(AU.sfxOn ? 0.85 : 0); music.connect(master); sfx.connect(master);
   const drums = g(0.9); drums.connect(music);
   const duck = g(1); duck.connect(music);                       // Sidechain: Bass + Flächen werden von der Kick weggedrückt
@@ -46,8 +47,8 @@ function duck(b, t, depth = 0.5, rel = 0.2) { const p = b.duck.gain; p.cancelSch
 /* ---------- Instrumente ---------- */
 export const I = {
   kick(b, t, v = 1) {
-    const g = G(b, 0, b.drums); perc(g, t, 0.95 * v, 0.42); const o = O(b, 'sine', 155, t, t + 0.45, g); o.frequency.exponentialRampToValueAtTime(46, t + 0.11);
-    const g2 = G(b, 0, b.drive); perc(g2, t, 0.5 * v, 0.13); const o2 = O(b, 'sine', 330, t, t + 0.15, g2); o2.frequency.exponentialRampToValueAtTime(85, t + 0.09);
+    const g = G(b, 0, b.drums); perc(g, t, 0.72 * v, 0.38); const o = O(b, 'sine', 155, t, t + 0.45, g); o.frequency.exponentialRampToValueAtTime(50, t + 0.11);
+    const g2 = G(b, 0, b.drive); perc(g2, t, 0.62 * v, 0.13); const o2 = O(b, 'sine', 330, t, t + 0.15, g2); o2.frequency.exponentialRampToValueAtTime(85, t + 0.09);
     const g3 = G(b, 0, b.drums); perc(g3, t, 0.25 * v, 0.012); N(b, t, t + 0.02, F(b, 'highpass', 2500, 0.7, g3));
     duck(b, t);
   },
@@ -62,7 +63,7 @@ export const I = {
     g.gain.linearRampToValueAtTime(0.45 * v, t + 0.035); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2); N(b, t, t + 0.22, f);
   },
   hat(b, t, v = 0.3, open = false) {
-    const g = G(b, 0, b.drums); perc(g, t, v * 0.32, open ? 0.3 : 0.045); const f = F(b, 'highpass', 7200, 0.7, g); N(b, t, t + (open ? 0.32 : 0.06), f);
+    const g = G(b, 0, b.drums); perc(g, t, v * 0.42, open ? 0.3 : 0.05); const f = F(b, 'highpass', 6800, 0.7, g); N(b, t, t + (open ? 0.32 : 0.06), f);
   },
   shaker(b, t, v = 0.2) { const g = G(b, 0, b.drums); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v * 0.18, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.08); N(b, t, t + 0.09, F(b, 'bandpass', 6500, 1.5, g)); },
   crash(b, t, v = 0.6) { const g = G(b, 0, b.drums); perc(g, t, v * 0.32, 2.0); N(b, t, t + 2.1, F(b, 'highpass', 4200, 0.7, g)); send(b, g, 0.3); },
@@ -80,23 +81,23 @@ export const I = {
     for (const m of [523, 811, 1307, 1907]) O(b, 'square', m * k, t, t + 0.2, f);
   },
   bass(b, t, n, dur, o = {}) {
-    const f = mtof(n), cut = o.cut || 800, out = G(b, 0, b.duck); adsr(out, t, dur, 0.42 * (o.vol || 1), 0.005, 0.25, 0.75, 0.06);
-    const ws = b.c.createWaveShaper(); ws.curve = distCurve(o.drive || 3); ws.connect(out);
+    const f = mtof(n), cut = (o.cut || 800) * 1.3, out = G(b, 0, b.duck); adsr(out, t, dur, 0.32 * (o.vol || 1), 0.005, 0.25, 0.75, 0.06);
+    const ws = b.c.createWaveShaper(); ws.curve = distCurve(o.drive || 5); ws.connect(out);
     const lp = F(b, 'lowpass', cut * 2.6, 3.5, ws); lp.frequency.setValueAtTime(cut * 2.6, t); lp.frequency.setTargetAtTime(cut, t, 0.05);
-    const end = t + dur + 0.25; O(b, 'sawtooth', f, t, end, lp); O(b, 'square', f * 0.998, t, end, G(b, 0.5, lp)); O(b, 'sine', f / 2, t, end, G(b, 0.7, out));
+    const end = t + dur + 0.25; O(b, 'sawtooth', f, t, end, lp); O(b, 'square', f * 0.998, t, end, G(b, 0.5, lp)); O(b, 'sine', f < 110 ? f : f / 2, t, end, G(b, 0.35, out));
   },
   pad(b, t, notes, dur, o = {}) {
-    const out = G(b, 0, b.duck); adsr(out, t, dur, 0.07 * (o.vol || 1), o.att || 0.35, 0.6, 0.85, o.rel || 0.8); send(b, out, 0.5);
+    const out = G(b, 0, b.duck); adsr(out, t, dur, 0.095 * (o.vol || 1), o.att || 0.35, 0.6, 0.85, o.rel || 0.8); send(b, out, 0.5);
     const lp = F(b, 'lowpass', o.cut || 1600, 0.8, out), end = t + dur + 1.2;
     for (const n of notes) for (const d of [-10, 0, 10]) { const os = O(b, 'sawtooth', mtof(n), t, end, lp); os.detune.value = d + (Math.random() - 0.5) * 4; }
   },
   pluck(b, t, n, o = {}) {
-    const out = G(b, 0, b.music); perc(out, t, 0.14 * (o.vol || 1), o.dec || 0.32); send(b, out, 0.15, o.dl !== undefined ? o.dl : 0.45);
+    const out = G(b, 0, b.music); perc(out, t, 0.19 * (o.vol || 1), o.dec || 0.32); send(b, out, 0.15, o.dl !== undefined ? o.dl : 0.45);
     const lp = F(b, 'lowpass', o.cut || 3000, 5, out); lp.frequency.setValueAtTime(o.cut || 3000, t); lp.frequency.setTargetAtTime(280, t, 0.06);
     O(b, 'sawtooth', mtof(n), t, t + 0.4, lp); O(b, 'square', mtof(n + 12), t, t + 0.4, G(b, 0.25, lp));
   },
   lead(b, t, n, dur, o = {}) {
-    const f = mtof(n), out = G(b, 0, b.music); adsr(out, t, dur, 0.13 * (o.vol || 1), 0.012, 0.3, 0.8, 0.12); send(b, out, 0.28, o.dl !== undefined ? o.dl : 0.32);
+    const f = mtof(n), out = G(b, 0, b.music); adsr(out, t, dur, 0.17 * (o.vol || 1), 0.012, 0.3, 0.8, 0.12); send(b, out, 0.28, o.dl !== undefined ? o.dl : 0.32);
     let dst = F(b, 'lowpass', o.cut || 3200, 1.2, out);
     if (o.gtr) { const ws = b.c.createWaveShaper(); ws.curve = distCurve(40); const pre = G(b, 0.5, ws); ws.connect(F(b, 'lowpass', 3800, 0.8, F(b, 'highpass', 200, 0.7, dst))); dst = pre; }
     const end = t + dur + 0.5, o1 = O(b, o.type || 'square', f, t, end, dst), o2 = O(b, 'sawtooth', f, t, end, G(b, 0.6, dst)); o2.detune.value = 7;
@@ -110,7 +111,7 @@ export const I = {
     for (const n of notes) for (const d of [-8, 8]) { const x = O(b, 'sawtooth', mtof(n), t, t + dur + 0.4, lp); x.detune.value = d; }
   },
   guitar(b, t, notes, dur, o = {}) {
-    const out = G(b, 0, b.music); adsr(out, t, dur, 0.15 * (o.vol || 1), 0.004, o.mute ? 0.08 : 0.6, o.mute ? 0.3 : 0.75, 0.07);
+    const out = G(b, 0, b.music); adsr(out, t, dur, 0.19 * (o.vol || 1), 0.004, o.mute ? 0.08 : 0.6, o.mute ? 0.3 : 0.75, 0.07);
     const cab = F(b, 'lowpass', o.mute ? 1500 : 3600, 0.9, out), pk = F(b, 'peaking', 1400, 1, cab); pk.gain.value = 5;
     const ws = b.c.createWaveShaper(); ws.curve = distCurve(70); ws.connect(F(b, 'highpass', 100, 0.7, pk));
     const pre = G(b, 0.45, ws), end = t + dur + 0.2;
@@ -190,10 +191,10 @@ export const TRACKS = {
       if (sec === 'build' && bar === 0 && st === 0) I.riser(b, t, D * 64);
       if (sec === 'brk' && bar === 2 && st === 0) I.riser(b, t, D * 32);
       if (sec === 'brk' && bar === 0 && st === 0) I.impact(b, t);
-      if (sec === 'intro') { if (st === 0) I.bass(b, t, ch.r - 12, D * 15, { cut: 260, vol: 0.6 }); }
+      if (sec === 'intro') { if (st === 0) I.bass(b, t, ch.r, D * 15, { cut: 300, vol: 0.45 }); }
       else if (sec === 'brk') { if (st === 0) I.bass(b, t, ch.r, D * 15, { cut: 380, vol: 0.55 }); }
       else { if (st % 4 === 2) I.bass(b, t, ch.r, D * 1.6, { cut: 700 }); if (st === 7 || st === 15) I.bass(b, t, ch.r + 12, D * 0.9, { cut: 950, vol: 0.7 }); if (st === 11 && bar % 2) I.bass(b, t, ch.r + 7, D * 0.9, { cut: 900, vol: 0.6 }); }
-      if (st === 0) I.pad(b, t, ch.pad, D * 16, { cut: sec === 'intro' ? 900 : sec === 'brk' ? 2300 : 1500, vol: sec === 'brk' ? 1.35 : 0.9 });
+      if (st === 0) I.pad(b, t, ch.pad, D * 16, { cut: sec === 'intro' ? 900 : sec === 'brk' ? 2300 : 1500, vol: sec === 'brk' ? 1.35 : sec === 'intro' ? 0.7 : 0.9 });
       if (sec !== 'brk') I.pluck(b, t, ch.arp[st % 8] + 12, { cut: sec === 'intro' ? 1100 : sec === 'build' ? 900 + (bar * 16 + st) / 64 * 2300 : sec === 'B' ? 1700 : 2700, vol: sec === 'B' ? 0.5 : 0.75 });
       if (sec === 'B' || sec === 'drop') { const ns = KMEL.get((bar * 16 + st) % 128); if (ns) for (const [l, n] of ns) { I.lead(b, t, n, D * l * 0.92); if (sec === 'drop') I.lead(b, t, n - 12, D * l * 0.92, { vol: 0.45, type: 'sawtooth', dl: 0.1 }); } }
       if (sec === 'brk' && st === 0) I.lead(b, t, [74, 77, 77, 76][bar], D * 15, { vol: 0.65, cut: 1900 });
