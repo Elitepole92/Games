@@ -3,718 +3,102 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>Hamster 3D</title>
+<meta name="theme-color" content="#120b1f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Medienhamster 3D</title>
 <style>
-  html, body { margin: 0; height: 100%; background: #0b0910; overflow: hidden; -webkit-text-size-adjust: 100%; font-family: system-ui, -apple-system, sans-serif; user-select: none; -webkit-user-select: none; }
+  :root { --lila: #8e44ff; --lila-d: #4a1f99; --gelb: #f2c018; }
+  html, body { margin: 0; height: 100%; background: #0b0910; overflow: hidden; -webkit-text-size-adjust: 100%; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; color: #fff; }
   canvas { display: block; width: 100%; height: 100%; touch-action: none; }
-  #hud { position: fixed; inset: 0; pointer-events: none; color: #fff; }
-  #hearts { position: absolute; left: 16px; top: max(14px, env(safe-area-inset-top)); font-size: 26px; letter-spacing: 2px; text-shadow: 0 2px 4px #000; }
-  #time { position: absolute; right: 16px; top: max(16px, env(safe-area-inset-top)); font: 700 20px/1 ui-monospace, monospace; text-shadow: 0 2px 4px #000; }
-  #prog { position: absolute; left: 50%; top: max(22px, env(safe-area-inset-top)); width: min(40vw, 260px); height: 8px; transform: translateX(-50%); background: rgba(255,255,255,0.15); border-radius: 4px; overflow: hidden; }
-  #prog i { display: block; height: 100%; width: 0; background: #a45cff; }
-  #msg { position: absolute; left: 0; right: 0; top: 16%; text-align: center; font-weight: 900; font-size: clamp(24px, 5.5vw, 44px); text-shadow: 0 3px 0 #4a1f99, 0 6px 14px #000; opacity: 0; transition: opacity .3s; }
-  #msg small { display: block; font-size: 0.38em; font-weight: 600; margin-top: 10px; text-shadow: 0 2px 4px #000; }
-  #jump { position: absolute; right: 26px; bottom: max(30px, env(safe-area-inset-bottom)); width: 86px; height: 86px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.35); background: rgba(164,92,255,0.25); display: none; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; }
-  #stick { position: absolute; width: 110px; height: 110px; margin: -55px 0 0 -55px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); display: none; }
-  #stick b { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; background: rgba(255,255,255,0.4); }
+  button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  #hud { position: fixed; inset: 0; pointer-events: none; }
+  #hearts { position: absolute; left: max(14px, env(safe-area-inset-left)); top: max(12px, env(safe-area-inset-top)); display: flex; gap: 4px; }
+  #hearts i { width: 26px; height: 24px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 24'%3E%3Cpath d='M13 22 C-4 11 3-3 13 5 C23-3 30 11 13 22Z' fill='none' stroke='%23fff' stroke-width='2' opacity='.6'/%3E%3C/svg%3E") center/contain no-repeat; filter: drop-shadow(0 2px 2px #000); }
+  #hearts i.on { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 24'%3E%3Cpath d='M13 22 C-4 11 3-3 13 5 C23-3 30 11 13 22Z' fill='%23ff3b5c' stroke='%23fff' stroke-width='1.6'/%3E%3Cellipse cx='8' cy='8' rx='3' ry='2' fill='%23fff' opacity='.5'/%3E%3C/svg%3E"); }
+  #tapes { position: absolute; left: max(14px, env(safe-area-inset-left)); top: calc(max(12px, env(safe-area-inset-top)) + 32px); font: 800 16px/1 system-ui, sans-serif; padding-left: 26px; text-shadow: 0 2px 3px #000; }
+  #tapes::before { content: ''; position: absolute; left: 0; top: -3px; width: 13px; height: 13px; border: 4px solid #2a2a2e; border-radius: 50%; background: #c8a878; box-shadow: 0 0 0 1.5px #8f7cff, 0 2px 3px #000; }
+  #time { position: absolute; right: calc(max(14px, env(safe-area-inset-right)) + 52px); top: max(17px, env(safe-area-inset-top)); font: 800 18px/1 ui-monospace, Menlo, monospace; text-shadow: 0 2px 3px #000; }
+  #btnPause { position: absolute; right: max(12px, env(safe-area-inset-right)); top: max(9px, env(safe-area-inset-top)); width: 40px; height: 36px; border: 0; border-radius: 10px; background: rgba(20,14,34,.6); pointer-events: auto; font-weight: 900; letter-spacing: 1px; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.25); }
+  #prog { position: absolute; left: 50%; top: max(19px, env(safe-area-inset-top)); width: min(36vw, 260px); height: 8px; transform: translateX(-50%); background: rgba(255,255,255,.15); border-radius: 4px; overflow: hidden; box-shadow: 0 1px 3px #000; }
+  #prog i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #8e44ff, #ff5ab8); }
+  #boss { display: none; position: absolute; left: 50%; top: max(10px, env(safe-area-inset-top)); width: min(52vw, 360px); transform: translateX(-50%); text-align: center; }
+  #boss b { font: 900 14px/1 system-ui, sans-serif; letter-spacing: 3px; text-shadow: 0 2px 3px #000; color: #ffb37a; }
+  #boss span { display: block; margin-top: 5px; height: 12px; border-radius: 6px; background: rgba(0,0,0,.5); overflow: hidden; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.3); }
+  #boss span i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #ff3b1f, #ff9a2a); transition: width .4s; }
+  #msg { position: absolute; left: 0; right: 0; top: 17%; text-align: center; font-weight: 900; font-size: clamp(26px, 5.4vw, 46px); letter-spacing: 1px; text-shadow: 0 3px 0 var(--lila-d), 0 6px 16px #000; opacity: 0; transform: scale(.9); transition: opacity .25s, transform .25s; }
+  #msg.show { opacity: 1; transform: none; }
+  #msg small { display: block; font-size: .4em; font-weight: 700; margin-top: 8px; letter-spacing: 0; text-shadow: 0 2px 4px #000; }
+  #bubbles .bubble { position: absolute; transform: translate(-50%, -100%); max-width: min(62vw, 300px); background: #fff; color: #111; font: 800 15px/1.25 system-ui, sans-serif; padding: 9px 13px; border-radius: 14px; box-shadow: 0 4px 0 rgba(0,0,0,.35); border: 2.5px solid #111; white-space: pre-wrap; }
+  #bubbles .bubble::after { content: ''; position: absolute; left: 50%; bottom: -12px; margin-left: -8px; border: 8px solid transparent; border-top-color: #111; }
+  #jump { position: absolute; right: max(26px, env(safe-area-inset-right)); bottom: max(30px, env(safe-area-inset-bottom)); width: 92px; height: 92px; border-radius: 50%; border: 3px solid rgba(255,255,255,.4); background: radial-gradient(circle at 35% 30%, rgba(190,140,255,.5), rgba(110,50,220,.35)); display: none; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; letter-spacing: 1px; pointer-events: auto; }
+  #stick { position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 2px solid rgba(255,255,255,.3); background: rgba(255,255,255,.05); display: none; }
+  #stick b { position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%; background: rgba(255,255,255,.45); }
   .touch #jump { display: flex; }
-  #msg button { pointer-events: auto; margin-top: 18px; font: 800 18px system-ui, sans-serif; color: #fff; background: #8e44ff; border: 0; border-radius: 12px; padding: 12px 22px; box-shadow: 0 4px 0 #4a1f99; text-shadow: none; }
+  /* Menüs */
+  .screen { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 14px; padding: 16px; box-sizing: border-box; background: radial-gradient(ellipse at 50% 120%, rgba(142,68,255,.35), rgba(11,9,16,.15) 60%); overflow-y: auto; }
+  .screen.show { display: flex; }
+  .dim { background: rgba(10,7,18,.72); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+  .logo { text-align: center; line-height: .9; margin-bottom: 4px; }
+  .logo b { display: block; font: 900 clamp(38px, 8.4vw, 86px)/.9 "Arial Black", Impact, system-ui, sans-serif; letter-spacing: 1px; background: linear-gradient(#fff, #e7d6ff 55%, #b98cff); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 4px 0 var(--lila-d)) drop-shadow(0 10px 18px rgba(0,0,0,.6)); }
+  .logo span { display: inline-block; margin-top: 8px; padding: 3px 12px; border-radius: 8px; background: var(--gelb); color: #111; font: 900 clamp(16px, 2.8vw, 24px)/1.2 system-ui, sans-serif; transform: rotate(-3deg); box-shadow: 0 3px 0 #9a7600; }
+  .logo em { display: block; margin-top: 10px; font: italic 700 15px system-ui; opacity: .85; text-shadow: 0 2px 4px #000; }
+  .btn { min-width: 210px; padding: 13px 26px; border: 0; border-radius: 14px; background: linear-gradient(#a066ff, #7b35ec); font-weight: 900; font-size: 18px; letter-spacing: .5px; box-shadow: 0 5px 0 var(--lila-d), 0 8px 18px rgba(0,0,0,.45); }
+  .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--lila-d); }
+  .btn.ghost { background: rgba(255,255,255,.1); box-shadow: inset 0 0 0 2px rgba(255,255,255,.3); font-size: 15px; min-width: 170px; padding: 10px 20px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  #cards { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 640px; }
+  .card { position: relative; width: 196px; text-align: left; padding: 12px 14px 12px 52px; border: 0; border-radius: 14px; background: rgba(20,14,34,.78); box-shadow: inset 0 0 0 2px rgba(255,255,255,.18); }
+  .card .num { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; border-radius: 9px; background: var(--lila); display: grid; place-items: center; font-weight: 900; }
+  .card b { display: block; font-size: 15px; } .card small { display: block; opacity: .7; font-size: 12px; margin-top: 3px; }
+  .card.lock { opacity: .5; } .card.lock .num { background: #555; }
+  h2 { margin: 0; font: 900 clamp(30px, 6vw, 50px)/1 system-ui; text-shadow: 0 3px 0 var(--lila-d), 0 6px 14px #000; }
+  #winText { text-align: center; } #winText b { display: block; font-size: 17px; margin-bottom: 10px; }
+  .stats { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; } .stats span { background: rgba(255,255,255,.1); border-radius: 10px; padding: 7px 12px; font-weight: 800; } .stats em { color: var(--gelb); font-style: normal; }
+  .foot { font-size: 12px; opacity: .65; text-align: center; max-width: 440px; line-height: 1.45; }
+  @media (max-height: 480px) { .logo b { font-size: 36px; } .logo em { display: none; } .screen { gap: 8px; } .card { width: 170px; padding: 8px 10px 8px 48px; } .btn { padding: 9px 22px; font-size: 16px; } .foot { display: none; } }
 </style>
-<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/" } }</script>
+<script type="importmap">{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/" } }</script>
 </head>
-<body>
-<div id="hud">
-  <div id="hearts"></div><div id="prog"><i></i></div><div id="time">0:00</div>
+<body data-state="title">
+<div id="hud" style="display:none">
+  <div id="hearts"></div><div id="tapes">0</div>
+  <div id="prog"><i></i></div>
+  <div id="boss"><b>DER RIGGER</b><span><i></i></span></div>
+  <div id="time">0:00.0</div><button id="btnPause" aria-label="Pause">II</button>
   <div id="msg"></div>
+  <div id="bubbles"></div>
   <div id="stick"><b></b></div><div id="jump">SPRUNG</div>
 </div>
-<script type="module">
-import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
-const QS = new URLSearchParams(location.search);
-const $ = id => document.getElementById(id);
-
-/* ---------- Renderer / Szene ---------- */
-const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: QS.has('shot') });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-document.body.prepend(renderer.domElement);
-
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 80);
-
-/* ---------- Hamster-Materialien ---------- */
-const toon = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.65, ...extra });   // weich schattiert
-const M = {
-  fur: toon('#e39a4b'), furD: toon('#b8692a'), belly: toon('#fde9cc'), pink: toon('#f4a0b5'),
-  cheek: toon('#f7c48e'), vest: toon('#8e44ff'), vestD: toon('#6a2fd0'),
-  refl: toon('#e9eef2', { emissive: '#8890a0', emissiveIntensity: 0.35 }),
-  helmet: new THREE.MeshStandardMaterial({ color: '#151517', roughness: 0.25, metalness: 0.3 }),
-  eye: new THREE.MeshStandardMaterial({ color: '#0d0d0f', roughness: 0.15 }),
-  white: toon('#ffffff'), whisker: new THREE.LineBasicMaterial({ color: '#5a3416' })
-};
-
-function mesh(geo, mat, pos = [0, 0, 0], scale = [1, 1, 1], rot = [0, 0, 0]) {
-  const m = new THREE.Mesh(geo, mat);
-  m.position.set(...pos); m.scale.set(...scale); m.rotation.set(...rot);
-  m.castShadow = true; return m;   // keine Eigenschatten: Toon-Look bleibt sauber
-}
-const sph = (r = 1, w = 32, h = 24) => new THREE.SphereGeometry(r, w, h);
-
-/* ---------- Der Medien Hamster ---------- */
-function buildHamster() {
-  const root = new THREE.Group();      // steht auf dem Boden, schaut nach +z
-  const body = new THREE.Group(); root.add(body);   // wippt / kippt
-  body.position.y = 0.95;
-
-  // Rumpf = Kopf (Hamster-Blob), pummelig
-  const BS = [0.82, 0.95, 0.78];
-  body.add(mesh(sph(1, 40, 32), M.fur, [0, 0, 0], BS));
-
-  // Lila Warnweste: Band um die Körpermitte, vorne offen für den Bauch
-  const vest = mesh(new THREE.SphereGeometry(1.025, 40, 16, Math.PI * 0.62, Math.PI * 1.76, Math.PI * 0.42, Math.PI * 0.34), M.vest, [0, 0, 0], BS);
-  body.add(vest);
-  for (const [a, b] of [[0.52, 0.04], [0.65, 0.04]]) {   // Reflektorstreifen
-    body.add(mesh(new THREE.SphereGeometry(1.035, 40, 4, Math.PI * 0.62, Math.PI * 1.76, Math.PI * a, Math.PI * b), M.refl, [0, 0, 0], BS));
-  }
-  // Bauch
-  body.add(mesh(sph(1), M.belly, [0, -0.2, 0.58], [0.42, 0.46, 0.2]));
-
-  // Helm
-  const helm = new THREE.Group(); helm.position.set(0, 0.56, 0.02); helm.rotation.x = -0.12; body.add(helm);
-  helm.add(mesh(new THREE.SphereGeometry(0.62, 40, 20, 0, Math.PI * 2, 0, Math.PI * 0.5), M.helmet, [0, 0, 0], [1, 0.78, 1.02]));
-  helm.add(mesh(new THREE.CylinderGeometry(0.64, 0.64, 0.05, 40), M.helmet, [0, 0, 0.02], [1, 1, 1.04]));   // Rand
-  helm.add(mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.05, 40, 1, false, -Math.PI / 2, Math.PI), M.helmet, [0, 0.01, 0.3], [1, 1, 1.1]));   // Schirm vorne
-  helm.add(mesh(new THREE.BoxGeometry(0.08, 0.5, 0.86), M.helmet, [0, 0.12, 0], [1, 1, 1], [0, 0, 0]));       // Kamm
-  helm.add(mesh(sph(0.1), M.white, [0.25, 0.36, 0.3], [0.9, 0.25, 0.6], [0.6, 0.4, 0]));                         // Glanzlicht
-
-  // Ohren seitlich unter dem Helm
-  for (const s of [-1, 1]) {
-    body.add(mesh(sph(0.17), M.furD, [s * 0.6, 0.5, -0.05], [1, 1, 0.55], [0, s * 0.5, s * 0.4]));
-    body.add(mesh(sph(0.1), M.pink, [s * 0.63, 0.5, 0.0], [1, 1, 0.4], [0, s * 0.5, s * 0.4]));
-  }
-
-  // Gesicht
-  for (const s of [-1, 1]) {
-    body.add(mesh(sph(0.1), M.eye, [s * 0.3, 0.32, 0.66]));
-    body.add(mesh(sph(0.035), M.white, [s * 0.3 + 0.035, 0.36, 0.75]));
-    const ch = mesh(sph(0.27), M.cheek, [s * 0.36, 0.02, 0.58], [1, 0.85, 0.75]); ch.name = 'cheek'; body.add(ch);
-    body.add(mesh(sph(0.07), M.pink, [s * 0.38, 0.06, 0.8], [1, 0.6, 0.3]));   // Bäckchen-Rouge
-  }
-  body.add(mesh(sph(0.075), M.pink, [0, 0.14, 0.8]));                         // Nase
-  body.add(mesh(new THREE.BoxGeometry(0.1, 0.1, 0.03), M.white, [0, -0.02, 0.76]));   // Zähnchen
-  for (const s of [-1, 1]) for (const dy of [0.06, 0, -0.06]) {                // Schnurrhaare
-    const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(s * 0.14, 0.12, 0.78), new THREE.Vector3(s * 0.62, 0.12 + dy * 2.2, 0.68)]);
-    body.add(new THREE.Line(g, M.whisker));
-  }
-
-  // Ärmchen
-  const arms = [];
-  for (const s of [-1, 1]) {
-    const pivot = new THREE.Group(); pivot.position.set(s * 0.62, 0.0, 0.32); body.add(pivot);
-    pivot.add(mesh(sph(0.16), M.furD, [s * 0.06, -0.14, 0.08], [0.8, 1.2, 0.8]));
-    pivot.add(mesh(sph(0.08), M.pink, [s * 0.08, -0.3, 0.12]));
-    arms.push(pivot);
-  }
-  // Füße (am root, damit sie am Boden bleiben)
-  const feet = [];
-  for (const s of [-1, 1]) {
-    const ft = new THREE.Group(); ft.position.set(s * 0.34, 0, 0.12); root.add(ft);
-    ft.add(mesh(sph(0.22), M.furD, [0, 0.16, -0.04], [0.9, 0.8, 0.9]));
-    ft.add(mesh(sph(0.2), M.pink, [0, 0.07, 0.12], [0.8, 0.4, 1.15]));
-    feet.push(ft);
-  }
-  // Schwänzchen
-  body.add(mesh(sph(0.12), M.furD, [0, -0.55, -0.72]));
-
-  root.userData = { body, arms, feet, cheeks: body.children.filter(c => c.name === 'cheek') };
-  return root;
-}
-
-
-/* =====================================================================
-   GEMEINSAME BAUSTEINE
-   ===================================================================== */
-function canvasTex(w, h, draw, rx = 1, ry = 1) {
-  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
-  draw(cv.getContext('2d'), w, h);
-  const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry);
-  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
-}
-let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-const speckle = (g, w, h, n, cols) => { for (let i = 0; i < n; i++) { g.fillStyle = cols[i % cols.length]; g.fillRect(rnd() * w, rnd() * h, 1 + rnd() * 2, 1 + rnd() * 2); } };
-const rep = (t, x, y) => { const c = t.clone(); c.repeat.set(x, y); c.needsUpdate = true; return c; };
-const T = {
-  floor: canvasTex(256, 256, (g, w, h) => {
-    g.fillStyle = '#3a3640'; g.fillRect(0, 0, w, h); speckle(g, w, h, 2600, ['#2e2b33', '#47434d', '#35313b']);
-    g.strokeStyle = '#24212a'; g.lineWidth = 3; g.strokeRect(0, 0, w, h);
-    g.fillStyle = 'rgba(0,0,0,0.25)'; g.beginPath(); g.ellipse(170, 90, 40, 18, 0.4, 0, 7); g.fill();
-  }),
-  wall: canvasTex(256, 256, (g, w, h) => {
-    g.fillStyle = '#4b4652'; g.fillRect(0, 0, w, h); speckle(g, w, h, 2200, ['#403b47', '#57525e']);
-    g.fillStyle = '#3f3a46'; for (let y = 0; y < h; y += 64) for (let x = (y / 64) % 2 * 64; x < w; x += 128) g.fillRect(x, y, 126, 62);
-    g.fillStyle = '#2b5a8c'; g.fillRect(0, h * 0.78, w, h * 0.22);
-    g.fillStyle = '#e8c21a'; g.fillRect(0, h * 0.76, w, 5);
-  }),
-  hazard: canvasTex(64, 64, (g, w, h) => {
-    g.fillStyle = '#f2c018'; g.fillRect(0, 0, w, h); g.fillStyle = '#18161a';
-    for (let i = -2; i < 4; i++) { g.beginPath(); g.moveTo(i * 32, 0); g.lineTo(i * 32 + 16, 0); g.lineTo(i * 32 + 16 + 64, h); g.lineTo(i * 32 + 64, h); g.fill(); }
-  }),
-  case: canvasTex(256, 256, (g, w, h) => {
-    g.fillStyle = '#1b1b1f'; g.fillRect(0, 0, w, h); speckle(g, w, h, 900, ['#232328', '#141417']);
-    g.strokeStyle = '#9aa0a8'; g.lineWidth = 14; g.strokeRect(7, 7, w - 14, h - 14);
-    for (const [x, y] of [[18, 18], [w - 18, 18], [18, h - 18], [w - 18, h - 18]]) { g.fillStyle = '#c9ced4'; g.beginPath(); g.arc(x, y, 14, 0, 7); g.fill(); }
-    g.fillStyle = '#e9e9e9'; g.fillRect(70, 110, 116, 36); g.fillStyle = '#111'; g.font = 'bold 22px monospace'; g.fillText('HALLE 3', 82, 136);
-  }),
-  stage: canvasTex(256, 256, (g, w, h) => {
-    g.fillStyle = '#17161a'; g.fillRect(0, 0, w, h); speckle(g, w, h, 1800, ['#1d1c21', '#121115', '#222127']);
-    g.strokeStyle = '#0c0c0e'; g.lineWidth = 2; for (let x = 0; x <= w; x += 128) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
-    g.fillStyle = '#e8e8e8'; g.fillRect(40, 60, 22, 5); g.fillStyle = '#f2c018'; g.fillRect(180, 190, 5, 22);
-    g.fillStyle = '#2bd1ff'; g.fillRect(150, 40, 18, 5);
-  }),
-  curtain: canvasTex(256, 64, (g, w, h) => {
-    for (let x = 0; x < w; x++) { const v = 14 + 10 * Math.sin(x / w * Math.PI * 8) ** 2; g.fillStyle = `rgb(${v},${v - 2},${v + 4})`; g.fillRect(x, 0, 1, h); }
-  })
-};
-const MAT = {
-  floor: new THREE.MeshStandardMaterial({ map: T.floor, roughness: 0.9 }),
-  wall: new THREE.MeshStandardMaterial({ map: T.wall, roughness: 0.95 }),
-  ceil: new THREE.MeshStandardMaterial({ color: '#232029', roughness: 1 }),
-  hazard: new THREE.MeshStandardMaterial({ map: T.hazard, roughness: 0.7 }),
-  case: new THREE.MeshStandardMaterial({ map: T.case, roughness: 0.5, metalness: 0.2 }),
-  pipe: new THREE.MeshStandardMaterial({ color: '#7c8088', roughness: 0.4, metalness: 0.6 }),
-  pipeR: new THREE.MeshStandardMaterial({ color: '#a8322c', roughness: 0.5, metalness: 0.3 }),
-  tray: new THREE.MeshStandardMaterial({ color: '#8d9198', roughness: 0.5, metalness: 0.7 }),
-  alu: new THREE.MeshStandardMaterial({ color: '#c3c8cf', roughness: 0.35, metalness: 0.85 }),
-  neon: new THREE.MeshBasicMaterial({ color: '#e9f4ff' }),
-  neonOff: new THREE.MeshBasicMaterial({ color: '#3a3d44' }),
-  chain: new THREE.MeshStandardMaterial({ color: '#9aa0a8', metalness: 0.8, roughness: 0.3 }),
-  hook: new THREE.MeshStandardMaterial({ color: '#e3a21a', metalness: 0.4, roughness: 0.4 }),
-  cableCols: ['#16161a', '#d33', '#2a62d0', '#16161a', '#f2c018', '#16161a'].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.6 })),
-  pitGlow: new THREE.MeshBasicMaterial({ color: '#ff5a1a' }),
-  grate: new THREE.MeshStandardMaterial({ color: '#55585f', metalness: 0.7, roughness: 0.5 }),
-  green: new THREE.MeshBasicMaterial({ color: '#19c25a' }),
-  pallet: new THREE.MeshStandardMaterial({ color: '#b88a52', roughness: 0.9 }),
-  barrel: new THREE.MeshStandardMaterial({ color: '#2a62d0', roughness: 0.5, metalness: 0.3 }),
-  black: new THREE.MeshStandardMaterial({ color: '#141416', roughness: 0.8 }),
-  skin: new THREE.MeshStandardMaterial({ color: '#e6b48f', roughness: 0.7 })
-};
-function box(w, h, d, mat, x, y, z, par = scene) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; par.add(m); return m; }
-function plane(w, h, mat, x, y, z, rx = 0, ry = 0) { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); m.position.set(x, y, z); m.rotation.set(rx, ry, 0); m.receiveShadow = true; scene.add(m); return m; }
-function sign(text, sub, col, x, y, z, ry = 0, w = 2.6) {
-  const tex = canvasTex(512, 160, (g, cw, ch) => {
-    g.fillStyle = col; g.fillRect(0, 0, cw, ch); g.fillStyle = '#fff'; g.textAlign = 'center';
-    g.font = '900 64px system-ui, sans-serif'; g.fillText(text, cw / 2, sub ? 82 : 102);
-    if (sub) { g.font = '700 34px system-ui, sans-serif'; g.fillText(sub, cw / 2, 132); }
-  });
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 160 / 512), new THREE.MeshBasicMaterial({ map: tex }));
-  m.position.set(x, y, z); m.rotation.y = ry; scene.add(m); return m;
-}
-const pingpong = (t, a, b, spd, pause = 0) => {   // hin und her mit Pause an den Enden
-  const L = Math.abs(b - a) / spd, per = 2 * (L + pause), u = ((t % per) + per) % per;
-  if (u < pause) return a; if (u < pause + L) return a + (b - a) * (u - pause) / L;
-  if (u < 2 * pause + L) return b; return b + (a - b) * (u - 2 * pause - L) / L;
-};
-const puffTex = canvasTex(64, 64, (g) => { const r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, 'rgba(255,255,255,0.9)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); });
-
-// Stagehand: schwarz gekleidet, Cap, schiebt Cases
-function buildCrew() {
-  const g = new THREE.Group(), legs = [];
-  for (const s of [-1, 1]) { const l = new THREE.Group(); l.position.set(s * 0.14, 0.82, 0); box(0.17, 0.82, 0.2, MAT.black, 0, -0.41, 0, l); box(0.2, 0.1, 0.32, MAT.black, 0, -0.8, 0.06, l); g.add(l); legs.push(l); }
-  box(0.5, 0.7, 0.3, MAT.black, 0, 1.18, 0, g).rotation.x = 0.35;
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 12), MAT.skin); head.position.set(0, 1.68, 0.16); head.castShadow = true; g.add(head);
-  box(0.34, 0.1, 0.36, MAT.black, 0, 1.82, 0.18, g); box(0.3, 0.04, 0.2, MAT.black, 0, 1.79, 0.42, g);
-  for (const s of [-1, 1]) box(0.12, 0.12, 0.6, MAT.black, s * 0.28, 1.35, 0.38, g).rotation.x = 0.3;
-  g.userData.legs = legs; return g;
-}
-// Rohr zwischen zwei Punkten (für Traversen)
-function tubeGeo(geos, ax, ay, az, bx, by, bz, r) {
-  const a = new THREE.Vector3(ax, ay, az), d = new THREE.Vector3(bx, by, bz).sub(a);
-  const g = new THREE.CylinderGeometry(r, r, d.length(), 6, 1);
-  g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.clone().normalize()));
-  g.translate((ax + bx) / 2, (ay + by) / 2, (az + bz) / 2); geos.push(g);
-}
-function buildTruss(x1, x2, z, y, size = 0.6) {   // waagerechte Box-Traverse
-  const geos = [], hs = size / 2, len = x2 - x1, C = [[-hs, -hs], [hs, -hs], [-hs, hs], [hs, hs]];
-  for (const [cy, cz] of C) tubeGeo(geos, x1, y + cy, z + cz, x2, y + cy, z + cz, 0.05);
-  const n = Math.max(1, Math.round(len / size));
-  for (let i = 0; i < n; i++) {
-    const a = x1 + len * i / n, b = x1 + len * (i + 1) / n;
-    for (const cz of [-hs, hs]) tubeGeo(geos, a, y - hs, z + cz, b, y + hs, z + cz, 0.025);
-    for (const cy of [-hs, hs]) tubeGeo(geos, a, y + cy, z - hs, b, y + cy, z + hs, 0.025);
-    tubeGeo(geos, a, y - hs, z - hs, a, y + hs, z - hs, 0.02); tubeGeo(geos, a, y - hs, z + hs, a, y + hs, z + hs, 0.02);
-  }
-  const m = new THREE.Mesh(mergeGeometries(geos), MAT.alu); m.castShadow = true; scene.add(m); return m;
-}
-function buildTower(x, z, h, size = 0.6) {   // senkrechter Traversenturm (Ground Support)
-  const geos = [], hs = size / 2;
-  for (const [cx, cz] of [[-hs, -hs], [hs, -hs], [-hs, hs], [hs, hs]]) tubeGeo(geos, x + cx, 0, z + cz, x + cx, h, z + cz, 0.05);
-  for (let y = 0; y < h - 0.1; y += size) {
-    tubeGeo(geos, x - hs, y, z - hs, x + hs, y + size, z - hs, 0.025); tubeGeo(geos, x - hs, y, z + hs, x + hs, y + size, z + hs, 0.025);
-    tubeGeo(geos, x - hs, y, z - hs, x - hs, y + size, z + hs, 0.025); tubeGeo(geos, x + hs, y, z - hs, x + hs, y + size, z + hs, 0.025);
-  }
-  const m = new THREE.Mesh(mergeGeometries(geos), MAT.alu); m.castShadow = true; scene.add(m);
-  box(1.2, 0.08, 1.2, MAT.alu, x, 0.04, z); return m;
-}
-
-/* =====================================================================
-   LEVEL 1: KATAKOMBEN DER MESSE
-   ===================================================================== */
-function level1() {
-  const W = 3.5, CEIL = 5.4, LEN = 156;
-  const LV = { name: 'KATAKOMBEN', sub: 'der Messe · Finde den Weg zu Halle 5', fog: '#0d0b12', fogNear: 10, fogFar: 42, bx: W, z1: -3.5, z2: LEN - 0.5, deathY: -5, pits: [[44, 47.2], [121, 128.5]], solids: [], movers: [], hazards: [] };
-  LV.cps = [2, 51, 90, 131].map(z => ({ x: 0, y: 0, z, at: P => P.z > z }));
-  LV.goal = P => P.z > 151;
-  LV.progress = P => P.z / 151;
-  const SLOW = [80, 87]; LV.slow = P => P.z > SLOW[0] && P.z < SLOW[1] && P.y < 0.3;
-  LV.winText = 'Ab auf die Bühne!';
-  scene.add(new THREE.HemisphereLight('#8f9bc9', '#2a2230', 1.25));
-  const caseBox = (x1, x2, z1, z2, h = 1.0, y0 = 0) => { LV.solids.push({ x1, x2, z1, z2, y1: y0, y2: y0 + h }); return box(x2 - x1, h, z2 - z1, MAT.case, (x1 + x2) / 2, y0 + h / 2, (z1 + z2) / 2); };
-  let z = -4;
-  for (const [a, b] of [...LV.pits, [LEN, LEN]]) {
-    const len = a - z;
-    if (len > 0) { const m = MAT.floor.clone(); m.map = rep(T.floor, W, len / 7); plane(W * 2, len, m, 0, 0, z + len / 2, -Math.PI / 2); }
-    if (b > a) {
-      for (const zz of [a, b]) box(W * 2, 0.08, 0.3, MAT.hazard, 0, 0.02, zz + (zz === a ? -0.15 : 0.15));
-      plane(W * 2, b - a, MAT.pitGlow, 0, -7, (a + b) / 2, -Math.PI / 2);
-      for (const zz of [a, b]) plane(W * 2, 7, MAT.wall, 0, -3.5, zz, 0, zz === a ? 0 : Math.PI);
-      const pl = new THREE.PointLight('#ff6a20', 18, 9, 1.6); pl.position.set(0, -2, (a + b) / 2); scene.add(pl);
-    }
-    z = b;
-  }
-  const wm = MAT.wall.clone(); wm.map = rep(T.wall, LEN / 5, 1);
-  for (const s of [-1, 1]) {
-    plane(LEN + 8, CEIL, wm, s * W, CEIL / 2, LEN / 2 - 4, 0, -s * Math.PI / 2);
-    box(0.5, 0.06, LEN + 8, MAT.tray, s * (W - 0.3), 3.6, LEN / 2 - 4);
-    for (let k = 0; k < 3; k++) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, LEN + 8, 6), MAT.cableCols[k + (s > 0 ? 2 : 0)]); c.rotation.x = Math.PI / 2; c.position.set(s * (W - 0.15 - k * 0.13), 3.7, LEN / 2 - 4); scene.add(c); }
-    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, LEN + 8, 12), s < 0 ? MAT.pipeR : MAT.pipe); p.rotation.x = Math.PI / 2; p.position.set(s * (W - 0.45), CEIL - 0.5, LEN / 2 - 4); scene.add(p);
-  }
-  plane(W * 2, LEN + 8, MAT.ceil, 0, CEIL, LEN / 2 - 4, Math.PI / 2);
-  plane(W * 2, CEIL, MAT.wall, 0, CEIL / 2, LEN, 0, Math.PI);
-  plane(W * 2, CEIL, MAT.wall, 0, CEIL / 2, -4);
-  const NEONS = [];
-  for (let z = 4; z < LEN; z += 9) { const m = box(0.18, 0.08, 2.2, MAT.neon, 0, CEIL - 0.06, z); m.castShadow = false; NEONS.push({ m, flick: rnd() < 0.25 }); }
-  sign('KATAKOMBEN', 'Messe · Ebene −2', '#2b5a8c', 0, 3.2, 20.5, Math.PI, 3.4);
-  sign('LASTENAUFZUG', 'Kettenzüge in Betrieb!', '#c0392b', -W + 0.02, 2.4, 62, Math.PI / 2);
-  sign('ACHTUNG', 'Dampfleitung undicht', '#d68910', W - 0.02, 2.4, 133, -Math.PI / 2);
-  sign('HALLE 5 ›', 'Ausgang Bühne', '#19a24a', 0, 3.8, LEN - 0.02, Math.PI, 3.2);
-  box(3.2, 0.25, 0.3, MAT.hazard, 0, 3.1, LEN - 0.2);
-  for (const s of [-1, 1]) box(0.25, 3.1, 0.3, MAT.hazard, s * 1.6, 1.55, LEN - 0.2);
-  plane(2.95, 2.95, new THREE.MeshBasicMaterial({ color: '#ffe9b0' }), 0, 1.5, LEN - 0.05, 0, Math.PI);
-  caseBox(-W, -0.6, 23, 24.6); caseBox(0.6, W, 28, 29.6); caseBox(-1.8, 1.8, 33, 34.4, 1.1);
-  caseBox(-W, -2.2, 33, 34.4, 2.1); caseBox(2.2, W, 33, 34.4, 2.1);
-  caseBox(-1, 1, 124.1, 125.5, 6, -6);
-  for (const [x, z] of [[-3, 8], [3, 14], [-3.05, 40], [3.05, 52.5], [-3, 89], [3, 92], [3, 147], [-3, 150]]) {
-    if (rnd() < 0.5) { box(0.9, 0.14, 1.1, MAT.pallet, x * 0.93, 0.07, z); box(0.8, 0.9, 1.0, MAT.case, x * 0.93, 0.6, z); }
-    else for (const k of [0, 0.7]) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.9, 16), MAT.barrel); b.position.set(x * 0.95, 0.45, z + k); b.castShadow = true; scene.add(b); }
-  }
-  const HOOKS = [58, 66, 74].map((z, i) => ({ z, ph: i * 2.1, L: 4.2 }));
-  for (const h of HOOKS) {
-    box(W * 2, 0.25, 0.25, MAT.pipe, 0, CEIL - 0.25, h.z);
-    const g = new THREE.Group(); g.position.set(0, CEIL - 0.4, h.z); scene.add(g);
-    box(0.5, 0.45, 0.4, MAT.hook, 0, -0.1, 0, g);
-    const ch = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, h.L, 6), MAT.chain); ch.position.y = -h.L / 2; g.add(ch);
-    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.42, 18, 14), MAT.hook); ball.position.y = -h.L; ball.castShadow = true; g.add(ball);
-    const hk = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.07, 8, 16, Math.PI * 1.4), MAT.chain); hk.position.y = -h.L - 0.45; g.add(hk);
-    h.g = g;
-  }
-  LV.hazards.push({ update(F, P) {
-    for (const h of HOOKS) {
-      const a = 1.05 * Math.sin(F / 60 * 1.7 + h.ph); h.g.rotation.z = a;
-      const bx = Math.sin(a) * h.L, by = CEIL - 0.4 - Math.cos(a) * h.L, dx = P.x - bx, dy = P.y + 0.6 - by, dz = P.z - h.z;
-      if (dx * dx + dy * dy + dz * dz < 0.85 * 0.85) hurt(Math.sign(dx || 1) * 0.25, -0.12);
-    }
-  } });
-  for (let i = 0; i < 26; i++) {
-    const pts = [], x0 = -W + rnd() * W * 2, z0 = SLOW[0] + rnd() * (SLOW[1] - SLOW[0]);
-    for (let k = 0; k < 6; k++) pts.push(new THREE.Vector3(Math.max(-W + 0.1, Math.min(W - 0.1, x0 + (rnd() - 0.5) * 3)), 0.06 + rnd() * 0.12, Math.max(SLOW[0], Math.min(SLOW[1], z0 + (rnd() - 0.5) * 3))));
-    const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, 0.05, 6), MAT.cableCols[i % 6]); m.castShadow = true; scene.add(m);
-  }
-  box(W * 2, 0.02, 0.25, MAT.hazard, 0, 0.01, SLOW[0] - 0.4);
-  const VENTS = []; for (const [zi, z] of [135, 139.5, 144].entries()) for (const [xi, x] of [-2.2, 0, 2.2].entries()) VENTS.push({ x, z, ph: (zi * 40 + xi * 70) % 150 });
-  const puffMat = new THREE.SpriteMaterial({ map: puffTex, color: '#dfe6ee', transparent: true, depthWrite: false });
-  for (const v of VENTS) { box(1.3, 0.05, 1.3, MAT.grate, v.x, 0.02, v.z); v.puffs = []; for (let k = 0; k < 7; k++) { const s = new THREE.Sprite(puffMat.clone()); s.visible = false; scene.add(s); v.puffs.push(s); } }
-  LV.hazards.push({
-    update(F, P) { for (const v of VENTS) { v.c = (F + v.ph) % 150; v.on = v.c > 90; if (v.on && Math.abs(P.x - v.x) < 0.75 && Math.abs(P.z - v.z) < 0.75 && P.y < 2.6) hurt(0, -0.18); } },
-    draw(F, P) {
-      for (const v of VENTS) v.puffs.forEach((s, k) => {
-        const life = ((v.c - 90) / 60 + k / 7) % 1; s.visible = v.on && Math.abs(v.z - P.z) < 30;
-        if (s.visible) { s.position.set(v.x + Math.sin(k * 3 + F * 0.05) * 0.15, 0.2 + life * 3, v.z); s.scale.setScalar(0.6 + life * 1.6); s.material.opacity = 0.75 * (1 - life); }
-        else if (!v.on && v.c > 70 && k === 0) { s.visible = true; s.position.set(v.x, 0.25, v.z); s.scale.setScalar(0.4); s.material.opacity = 0.4; }
-      });
-    }
-  });
-  for (const c of LV.cps.slice(1)) box(W * 2, 0.02, 0.18, MAT.green, 0, 0.012, c.z);
-  const ROLL = { z1: 94, z2: 118, every: 62, lanes: [-2.2, 0, 2.2] }, rollers = [];
-  const spawn = lane => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.1, 1.4), MAT.case); m.castShadow = true; scene.add(m);
-    for (const s of [-1, 1]) for (const t of [-1, 1]) { const wl = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.1, 10), MAT.tray); wl.rotation.z = Math.PI / 2; wl.position.set(s * 0.55, -0.62, t * 0.55); m.add(wl); }
-    rollers.push({ m, x: lane, z: ROLL.z2 });
-  };
-  LV.hazards.push({
-    update(F, P) {
-      if (F % ROLL.every === 0) spawn(ROLL.lanes[(F / ROLL.every) % 3 | 0]);
-      if (F % ROLL.every === 30) spawn(ROLL.lanes[((F / ROLL.every | 0) + 2) % 3]);
-      for (let i = rollers.length - 1; i >= 0; i--) {
-        const r = rollers[i]; r.z -= 0.09;
-        if (r.z < ROLL.z1) { scene.remove(r.m); rollers.splice(i, 1); continue; }
-        if (overlap({ x1: r.x - 0.7, x2: r.x + 0.7, z1: r.z - 0.7, z2: r.z + 0.7, y1: 0, y2: 1.2 })) {
-          if (P.vy < 0 && P.y > 0.85) { P.y = 1.2; P.vy = JUMP * 0.9; P.jumps = 0; sfx('jump'); } else hurt(0, -0.3);
-        }
-      }
-    },
-    draw() { for (const r of rollers) r.m.position.set(r.x, 0.67, r.z); }
-  });
-  LV.light = { sunOff: [2, 9, -3] };
-  LV.draw = (F) => { for (const n of NEONS) if (n.flick) n.m.material = (Math.sin(F * 0.7 + n.m.position.z) > 0.6 || (F % 97) < 6) ? MAT.neonOff : MAT.neon; };
-  return LV;
-}
-
-/* =====================================================================
-   LEVEL 2: MAINSTAGE – Cases ausweichen, hoch auf die Traverse
-   Backstage (z 0–22) → Treppe → Bühne (Deck y 1.6) → Podeste → Kettenzug-Lift → Traverse (y 8.6)
-   ===================================================================== */
-function level2() {
-  const W = 7, DECK = 1.6, TZ = 64, TY = 8.6;
-  const LV = { name: 'MAINSTAGE', sub: 'Rauf auf die Traverse!', fog: '#08070c', fogNear: 16, fogFar: 60, bx: W, z1: -3, z2: 69.4, deathY: -5, pits: [], solids: [], movers: [], hazards: [] };
-  LV.winText = 'Oben auf der Traverse – bester Platz im Haus!';
-  LV.slow = () => false;
-  scene.add(new THREE.HemisphereLight('#7f86b8', '#1c1622', 0.75));
-  const solid = (x1, x2, z1, z2, y1, y2, mat, vis = true) => { LV.solids.push({ x1, x2, z1, z2, y1, y2 }); if (vis) return box(x2 - x1, y2 - y1, z2 - z1, mat, (x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2); };
-
-  // Backstage
-  { const m = MAT.floor.clone(); m.map = rep(T.floor, W, 4); plane(W * 2, 30, m, 0, 0, 11, -Math.PI / 2); }
-  { const m = MAT.wall.clone(); m.map = rep(T.wall, 6, 1.4); for (const s of [-1, 1]) plane(26, 7, m, s * W, 3.5, 11, 0, -s * Math.PI / 2); plane(W * 2, 7, m, 0, 3.5, -4); }
-  sign('MAINSTAGE ›', 'Nur Crew & Künstler', '#8e44ff', -W + 0.02, 2.6, 5, Math.PI / 2, 3);
-  sign('BACKSTAGE', 'Achtung Case-Verkehr!', '#c0392b', W - 0.02, 2.6, 4, -Math.PI / 2, 3);
-  for (let z = 2; z < 22; z += 6) { const m = box(0.18, 0.08, 2.2, MAT.neon, 0, 6.9, z); m.castShadow = false; }
-  for (const [x, z] of [[-6.2, 1], [6.2, 9], [-6.2, 15.5], [6.2, 20]]) { box(1.2, 0.14, 1.2, MAT.pallet, x, 0.07, z); box(1.1, 1.0, 1.1, MAT.case, x, 0.64, z); box(0.9, 0.8, 0.9, MAT.case, x, 1.54, z); }
-  // Treppe + Bühnendeck
-  for (let i = 0; i < 4; i++) solid(-3, 3, 22 + i, 26, 0, 0.4 * (i + 1), MAT.black);
-  box(0.12, 1.1, 4, MAT.alu, -3.06, 1.3, 24); box(0.12, 1.1, 4, MAT.alu, 3.06, 1.3, 24);
-  solid(-W, W, 26, 70, 0, DECK, MAT.black, false);
-  { const m = new THREE.MeshStandardMaterial({ map: rep(T.stage, 5, 16), roughness: 0.75 }); plane(W * 2, 44, m, 0, DECK, 48, -Math.PI / 2); box(W * 2, DECK, 0.1, MAT.black, 0, DECK / 2, 70); }
-  for (const s of [-1, 1]) solid(s > 0 ? 3 : -W, s > 0 ? W : -3, 21.9, 26, 0, DECK, MAT.black);
-  // Molton-Vorhänge an den Seiten
-  { const m = new THREE.MeshStandardMaterial({ map: rep(T.curtain, 10, 1), roughness: 1 }); for (const s of [-1, 1]) plane(46, 11, m, s * W, DECK + 5.5, 48, 0, -s * Math.PI / 2); }
-  // Publikum
-  {
-    plane(60, 40, new THREE.MeshStandardMaterial({ color: '#0d0c10' }), 0, -0.6, 92, -Math.PI / 2);
-    box(W * 2 + 4, 1.1, 0.15, MAT.alu, 0, -0.05, 72.5);
-    const N = 260, crowd = new THREE.InstancedMesh(new THREE.CapsuleGeometry(0.26, 0.6, 3, 8), new THREE.MeshStandardMaterial({ color: '#1a1822', roughness: 1 }), N);
-    const phones = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.1, 0.17), new THREE.MeshBasicMaterial({ color: '#cfe8ff' }), 40);
-    const C = []; for (let i = 0; i < N; i++) C.push({ x: (rnd() - 0.5) * 34, z: 74 + rnd() * 22, ph: rnd() * 7, s: 0.9 + rnd() * 0.3 });
-    scene.add(crowd, phones);
-    const mx = new THREE.Matrix4();
-    LV.crowd = (F) => {
-      C.forEach((c, i) => { const j = Math.max(0, Math.sin(F * 0.16 + c.ph)) * 0.35; mx.makeScale(c.s, c.s, c.s).setPosition(c.x, 0.05 + j, c.z); crowd.setMatrixAt(i, mx); if (i < 40) { mx.makeRotationY(Math.PI).setPosition(c.x + 0.2, 1.3 + j + 0.4 * Math.sin(F * 0.05 + c.ph), c.z - 0.3); phones.setMatrixAt(i, mx); } });
-      crowd.instanceMatrix.needsUpdate = true; phones.instanceMatrix.needsUpdate = true;
-    };
-  }
-  // Traversen
-  buildTruss(-W + 0.4, W - 0.4, TZ, TY - 0.3); buildTower(-W + 0.4, TZ, TY); buildTower(W - 0.4, TZ, TY);
-  buildTruss(-W + 0.4, W - 0.4, 38, 9.6); buildTower(-W + 0.4, 38, 9.9); buildTower(W - 0.4, 38, 9.9);
-  // Laufsteg auf der Ziel-Traverse, mit Lücke
-  const plank = new THREE.MeshStandardMaterial({ color: '#3a3d44', metalness: 0.6, roughness: 0.5 });
-  solid(-6.4, -0.9, TZ - 0.8, TZ + 0.8, TY - 0.6, TY, plank, false); box(5.5, 0.06, 1.6, plank, -3.65, TY + 0.03, TZ);
-  solid(0.7, 6.4, TZ - 0.8, TZ + 0.8, TY - 0.6, TY, plank, false); box(5.7, 0.06, 1.6, plank, 3.55, TY + 0.03, TZ);
-  for (const x of [-0.95, 0.75]) box(0.12, 0.08, 1.6, MAT.hazard, x, TY + 0.06, TZ);
-  // Ziel: Follow-Spot-Platz mit Fahne
-  const goalX = -5.4;
-  { const g = new THREE.Group(); g.position.set(goalX, TY, TZ); scene.add(g);
-    box(0.4, 0.4, 1.1, MAT.black, 0, 0.75, 0, g).rotation.x = 0.25; box(0.08, 0.6, 0.08, MAT.alu, 0, 0.3, 0, g);
-    LV.flag = box(0.9, 0.5, 0.03, new THREE.MeshBasicMaterial({ color: '#a45cff' }), 0.5, 1.6, 0, g); box(0.05, 1.9, 0.05, MAT.alu, 0.03, 0.95, 0, g); }
-  LV.goal = P => P.x < goalX + 0.6 && P.y > TY - 0.1 && Math.abs(P.z - TZ) < 1.1;
-  // Podeste hoch zum Lift
-  solid(-6, -2, 50, 53, DECK, 2.4, MAT.case);
-  solid(-1.2, 2.8, 53.5, 56.5, DECK, 3.2, MAT.case);
-  solid(3.4, W, 57, 60.6, DECK, 4.0, MAT.case);
-  // Kettenzug-Lift
-  const lift = { w: 2.6, h: 0.3, d: 2.2, x: 5.2, z: 62.1, hurts: false, mesh: new THREE.Group() };
-  box(lift.w, lift.h, lift.d, MAT.hazard, 0, lift.h / 2, 0, lift.mesh); scene.add(lift.mesh);
-  const chains = []; for (const s of [-1, 1]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1, 6), MAT.chain); scene.add(c); chains.push([c, s]); }
-  box(0.5, 0.5, 0.45, MAT.hook, 5.2, 10.6, 62); box(0.15, 0.15, 6, MAT.pipe, 5.2, 10.9, 63);
-  lift.pos = F => [lift.x, pingpong(F, 4.0 - lift.h, TY - lift.h, 0.035, 80), lift.z];
-  lift.draw = () => { for (const [c, s] of chains) { const top = 10.4, bot = lift.y + lift.h; c.position.set(lift.x + s * 1.1, (top + bot) / 2, lift.z); c.scale.y = top - bot; } };
-  LV.movers.push(lift);
-  // Case-Verkehr mit Stagehands
-  const caseMover = (w, h, d, pos) => {
-    const m = { w, h, d, hurts: true, pos, mesh: new THREE.Group(), crew: buildCrew() };
-    box(w, h - 0.14, d, MAT.case, 0, (h - 0.14) / 2 + 0.14, 0, m.mesh);
-    for (const s of [-1, 1]) for (const t of [-1, 1]) { const wl = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.06, 10), MAT.tray); wl.rotation.z = Math.PI / 2; wl.position.set(s * (w / 2 - 0.15), 0.07, t * (d / 2 - 0.15)); m.mesh.add(wl); }
-    scene.add(m.mesh, m.crew);
-    m.draw = (F) => {
-      const sp = Math.hypot(m.dx, m.dz); if (sp > 0.003) m.dir = Math.atan2(m.dx, m.dz);
-      const dir = m.dir || 0, back = (Math.abs(Math.sin(dir)) * w + Math.abs(Math.cos(dir)) * d) / 2 + 0.3;
-      m.crew.position.set(m.x - Math.sin(dir) * back, m.y, m.z - Math.cos(dir) * back); m.crew.rotation.y = dir;
-      const sw = sp > 0.003 ? Math.sin(F * 0.3) * 0.5 : 0; m.crew.userData.legs[0].rotation.x = sw; m.crew.userData.legs[1].rotation.x = -sw;
-    };
-    LV.movers.push(m); return m;
-  };
-  [[7, 0.05, 0], [12.5, 0.07, 140], [18, 0.06, 60]].forEach(([z, v, ph]) => caseMover(1.6, 1.3, 1.4, F => [pingpong(F + ph, -5.2, 5.2, v, 25), 0, z]));
-  [[-4.6, 0], [-1.6, 120], [1.6, 60], [4.6, 180]].forEach(([x, ph]) => caseMover(1.5, 1.3, 1.5, F => [x, DECK, 49 - ((F * 0.075 + ph * 0.5 + x * 3 + 40) % 22.5)]));
-  caseMover(1.6, 1.3, 1.4, F => [pingpong(F + 30, 5.4, -5.4, 0.08, 20), DECK, 42]);
-  // Checkpoints
-  LV.cps = [
-    { x: 0, y: 0, z: 0, at: () => true },
-    { x: 0, y: DECK, z: 27.5, at: P => P.z > 27 && P.y > 1 },
-    { x: 5.2, y: 4.0, z: 59, at: P => P.z > 57 && P.y > 3.8 },
-    { x: 4.5, y: TY, z: TZ, at: P => P.y > TY - 0.1 && Math.abs(P.z - TZ) < 1.1 }
-  ];
-  box(W * 2, 0.02, 0.18, MAT.green, 0, DECK + 0.012, 27.5); box(3.6, 0.02, 0.18, MAT.green, 5.2, 4.012, 59);
-  LV.progress = P => Math.min(1, Math.min(P.z, 62) / 62 * 0.75 + Math.max(0, Math.min(1, (P.y - 4) / 4.6)) * 0.15 + (P.y > TY - 0.2 ? (6 - P.x) / 11.4 * 0.1 : 0));
-  // Bühnenlicht
-  const beams = [], beamMats = ['#a45cff', '#2bd1ff', '#ff3ea5'].map(c => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.11, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
-  [-5, -3, -1, 1, 3, 5].forEach((x, i) => {
-    const g = new THREE.Group(); g.position.set(x, 9.1, 38); scene.add(g);
-    box(0.35, 0.4, 0.35, MAT.black, 0, 0, 0, g);
-    const cone = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 1.6, 9, 20, 1, true), beamMats[i % 3]); cone.position.y = -4.6; g.add(cone);
-    beams.push({ g, i });
-  });
-  const spots = [['#a45cff', -3], ['#2bd1ff', 3]].map(([c, x]) => { const s = new THREE.SpotLight(c, 160, 26, 0.5, 0.6, 1.2); s.position.set(x, 9, 38); scene.add(s, s.target); return s; });
-  const front = new THREE.SpotLight('#ffe7c4', 120, 40, 0.7, 0.5, 1); front.position.set(0, 12, 90); front.target.position.set(0, 2, 55); scene.add(front, front.target);
-  LV.light = { sunOff: [3, 12, 4] };
-  LV.draw = (F) => {
-    beams.forEach(({ g, i }) => { g.rotation.z = Math.sin(F * 0.02 + i) * 0.5; g.rotation.x = Math.cos(F * 0.017 + i * 1.7) * 0.4; });
-    spots.forEach((s, i) => s.target.position.set(Math.sin(F * 0.015 + i * 3) * 5, DECK, 44 + Math.cos(F * 0.012 + i) * 8));
-    LV.flag.rotation.y = Math.sin(F * 0.08) * 0.25;
-    LV.crowd(F);
-  };
-  return LV;
-}
-
-/* =====================================================================
-   SPIEL-ENGINE
-   ===================================================================== */
-const LEVELS = [level1, level2];
-const LEVEL = Math.max(1, Math.min(LEVELS.length, +QS.get('level') || 1));
-const LV = LEVELS[LEVEL - 1]();
-scene.background = new THREE.Color(LV.fog);
-scene.fog = new THREE.Fog(LV.fog, LV.fogNear, LV.fogFar);
-
-const sun = new THREE.DirectionalLight('#dfe9ff', 1.6);
-sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
-Object.assign(sun.shadow.camera, { left: -9, right: 9, top: 11, bottom: -11, near: 0.5, far: 34 });
-sun.shadow.bias = -0.0015; sun.shadow.normalBias = 0.03;
-scene.add(sun, sun.target);
-const lamp = new THREE.PointLight('#ffd9a8', 26, 14, 1.4); scene.add(lamp);
-
-const hamster = buildHamster();
-hamster.scale.setScalar(0.62);
-scene.add(hamster);
-const C0 = LV.cps[0];
-const P = { x: C0.x, y: C0.y, z: C0.z, vx: 0, vy: 0, vz: 0, ground: true, gy: C0.y, face: 0, hp: 3, inv: 0, cp: 0, slow: false, jumps: 0, anim: 0, done: false, dead: 0, on: null };
-const R = 0.42, H = 1.2, SPEED = 0.115, GRAV = 0.017, JUMP = 0.3, STEP = 0.45;
-
-const mBox = m => ({ x1: m.x - m.w / 2, x2: m.x + m.w / 2, z1: m.z - m.d / 2, z2: m.z + m.d / 2, y1: m.y, y2: m.y + m.h, m });
-function overlap(o) { return P.x + R > o.x1 && P.x - R < o.x2 && P.z + R > o.z1 && P.z - R < o.z2 && P.y + H > o.y1 && P.y < o.y2; }
-const inPit = z => LV.pits.some(([a, b]) => z > a + 0.15 && z < b - 0.15);
-
-function msg(html, frames = 120) { const m = $('msg'); m.innerHTML = html; m.style.opacity = 1; P.msgT = frames; }
-function hurt(kx, kz) {
-  if (P.inv > 0 || P.done || P.dead) return;
-  P.hp--; P.inv = 90; P.vx = kx; P.vz = kz; P.vy = 0.2; P.ground = false; P.on = null; sfx('hurt');
-  if (P.hp <= 0) { P.dead = 70; msg('AUTSCH!<small>Nochmal vom Checkpoint</small>'); }
-  updHud();
-}
-function respawn(full) {
-  const c = LV.cps[P.cp];
-  Object.assign(P, { x: c.x, y: c.y, z: c.z, gy: c.y, vx: 0, vy: 0, vz: 0, ground: true, inv: 60, dead: 0, on: null });
-  if (full) P.hp = 3;
-  updHud();
-}
-function updHud() { $('hearts').textContent = '❤'.repeat(Math.max(0, P.hp)) + '♡'.repeat(3 - Math.max(0, P.hp)); }
-
-/* ---------- Eingabe ---------- */
-const keys = {}; const IN = { x: 0, z: 0, jump: false, jumpHeld: false };
-addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault(); audioInit(); });
-addEventListener('keyup', e => keys[e.code] = false);
-let stick = null; const stickEl = $('stick'), knob = stickEl.firstElementChild;
-const touchJump = { down: false };
-addEventListener('pointerdown', e => {
-  audioInit();
-  if (e.target.closest && e.target.closest('button')) return;
-  if (e.pointerType !== 'mouse') document.body.classList.add('touch');
-  if (e.target.id === 'jump') { touchJump.down = true; return; }
-  if (e.clientX < innerWidth * 0.6) { stick = { id: e.pointerId, ox: e.clientX, oy: e.clientY, dx: 0, dy: 0 }; stickEl.style.display = 'block'; stickEl.style.left = e.clientX + 'px'; stickEl.style.top = e.clientY + 'px'; }
-  else touchJump.down = true;
-});
-$('jump').style.pointerEvents = 'auto';
-addEventListener('pointermove', e => {
-  if (stick && e.pointerId === stick.id) {
-    let dx = e.clientX - stick.ox, dy = e.clientY - stick.oy; const l = Math.hypot(dx, dy), mx = 50;
-    if (l > mx) { dx *= mx / l; dy *= mx / l; }
-    stick.dx = dx / mx; stick.dy = dy / mx; knob.style.transform = `translate(${dx}px,${dy}px)`;
-  }
-});
-const endStick = e => { if (stick && e.pointerId === stick.id) { stick = null; stickEl.style.display = 'none'; knob.style.transform = ''; } else touchJump.down = false; };
-addEventListener('pointerup', endStick); addEventListener('pointercancel', endStick);
-function readInput() {
-  let x = 0, z = 0;
-  if (keys.ArrowLeft || keys.KeyA) x += 1; if (keys.ArrowRight || keys.KeyD) x -= 1;
-  if (keys.ArrowUp || keys.KeyW) z += 1; if (keys.ArrowDown || keys.KeyS) z -= 1;
-  if (stick) { x -= stick.dx; z -= stick.dy; }
-  const l = Math.hypot(x, z); if (l > 1) { x /= l; z /= l; }
-  const j = keys.Space || keys.KeyK || touchJump.down;
-  IN.jump = j && !IN.jumpHeld; IN.jumpHeld = j; IN.x = x; IN.z = z;
-}
-
-/* ---------- Sound ---------- */
-let AC = null;
-function audioInit() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { } } else if (AC.state === 'suspended') AC.resume(); }
-function sfx(kind) {
-  if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
-  o.connect(g); g.connect(AC.destination);
-  const S = { jump: ['square', 300, 620, 0.12, 0.07], hurt: ['sawtooth', 240, 70, 0.3, 0.12], cp: ['triangle', 660, 990, 0.25, 0.1], win: ['triangle', 520, 1040, 0.6, 0.12], bonk: ['square', 160, 220, 0.08, 0.08] }[kind];
-  o.type = S[0]; o.frequency.setValueAtTime(S[1], t); o.frequency.exponentialRampToValueAtTime(S[2], t + S[3]);
-  g.gain.setValueAtTime(S[4], t); g.gain.exponentialRampToValueAtTime(0.001, t + S[3]); o.start(t); o.stop(t + S[3] + 0.02);
-}
-
-/* ---------- Spiel-Schritt (60 Hz fest) ---------- */
-let F = 0;
-function step() {
-  F++;
-  if (P.msgT > 0 && --P.msgT === 0) $('msg').style.opacity = 0;
-
-  // bewegliche Objekte: tragen den Hamster mit oder schubsen ihn weg
-  for (const m of LV.movers) {
-    const [nx, ny, nz] = m.pos(F);
-    if (m.x === undefined) { m.x = nx; m.y = ny; m.z = nz; }
-    m.dx = nx - m.x; m.dy = ny - m.y; m.dz = nz - m.z;
-    const jumped = Math.abs(m.dx) + Math.abs(m.dy) + Math.abs(m.dz) > 2;
-    if (jumped) { m.dx = m.dy = m.dz = 0; if (P.on === m) P.on = null; }
-    m.x = nx; m.y = ny; m.z = nz;
-    if (P.dead || P.done) continue;
-    if (P.on === m) { P.x += m.dx; P.z += m.dz; P.y = m.y + m.h; }
-    else if (overlap(mBox(m))) {
-      const o = mBox(m);
-      if (P.y >= o.y2 - 0.35 && P.vy <= 0.05) { P.y = o.y2; P.vy = 0; P.on = m; P.ground = true; }
-      else if (!jumped) {
-        if (Math.abs(m.dy) > Math.abs(m.dx) + Math.abs(m.dz)) P.x = P.x < m.x ? o.x1 - R : o.x2 + R;
-        else if (Math.abs(m.dx) >= Math.abs(m.dz)) P.x = m.dx > 0 ? o.x2 + R : o.x1 - R;
-        else P.z = m.dz > 0 ? o.z2 + R : o.z1 - R;
-        P.x = Math.max(-LV.bx + R, Math.min(LV.bx - R, P.x));
-        if (m.hurts && Math.hypot(m.dx, m.dz) > 0.01) hurt(Math.sign(m.dx) * 0.28, Math.sign(m.dz) * 0.28 || -0.2);
-      }
-    }
-  }
-  if (P.dead > 0) { if (--P.dead === 0) respawn(true); return; }
-  if (P.done) return;
-
-  const boxes = LV.solids.concat(LV.movers.map(mBox));
-  const sp = SPEED * (P.slow && P.ground ? 0.45 : 1), acc = P.ground ? 0.25 : 0.08;
-  P.vx += (IN.x * sp - P.vx) * acc; P.vz += (IN.z * sp - P.vz) * acc;
-  if (IN.jump && (P.ground || P.jumps < 1)) { if (!P.ground) P.jumps++; P.vy = JUMP * (P.ground ? 1 : 0.85); P.ground = false; P.on = null; sfx('jump'); }
-  P.vy -= GRAV; if (P.vy < -0.5) P.vy = -0.5;
-
-  // horizontal, kleine Kanten (Stufen) werden automatisch hochgelaufen
-  const horiz = (axis, v) => {
-    P[axis] += v;
-    for (const o of boxes) if (overlap(o)) {
-      if (P.ground && o.y2 - P.y <= STEP && o.y2 - P.y > 0) { const y0 = P.y; P.y = o.y2; if (!boxes.some(q => q !== o && overlap(q))) continue; P.y = y0; }
-      P[axis] = v > 0 ? (axis === 'x' ? o.x1 : o.z1) - R : (axis === 'x' ? o.x2 : o.z2) + R;
-      if (axis === 'x') P.vx = 0; else P.vz = 0;
-    }
-  };
-  horiz('x', P.vx); P.x = Math.max(-LV.bx + R, Math.min(LV.bx - R, P.x));
-  horiz('z', P.vz); P.z = Math.max(LV.z1, Math.min(LV.z2, P.z));
-  P.ground = false; P.y += P.vy; let landed = null;
-  for (const o of boxes) if (overlap(o)) {
-    if (P.vy <= 0) { P.y = o.y2; P.vy = 0; P.ground = true; landed = o; } else { P.y = o.y1 - H; P.vy = 0; sfx('bonk'); }
-  }
-  if (!P.ground && P.on && P.vy <= 0) { const o = mBox(P.on); if (P.x + R > o.x1 && P.x - R < o.x2 && P.z + R > o.z1 && P.z - R < o.z2 && Math.abs(P.y - o.y2) < 0.35) { P.y = o.y2; P.vy = 0; P.ground = true; landed = o; } }
-  if (!inPit(P.z) && P.y <= 0 && P.y > -0.6) { P.y = 0; P.vy = Math.max(0, P.vy); P.ground = true; landed = null; }
-  P.on = landed && landed.m ? landed.m : null;
-  if (P.ground) { P.jumps = 0; P.gy = P.y; }
-  if (P.y < LV.deathY) { P.hp--; updHud(); if (P.hp <= 0) { P.dead = 70; msg('AUTSCH!<small>Ab in den Kabelschacht …</small>'); } else { respawn(false); msg('KABELSCHACHT!<small>−1 Leben</small>', 80); sfx('hurt'); } return; }
-
-  P.slow = LV.slow(P);
-  if (Math.hypot(P.vx, P.vz) > 0.01) P.face = Math.atan2(P.vx, P.vz);
-  for (let i = P.cp + 1; i < LV.cps.length; i++) if (LV.cps[i].at(P)) { P.cp = i; sfx('cp'); msg('CHECKPOINT', 60); }
-  if (LV.goal(P)) {
-    P.done = true; P.endF = F; sfx('win');
-    try { localStorage.setItem('mh3d-level', Math.max(+localStorage.getItem('mh3d-level') || 1, LEVEL + 1)); } catch (e) { }
-    const next = LEVEL < LEVELS.length ? `<button id="next">Weiter zu Level ${LEVEL + 1} ›</button>` : '<small>Mehr Level kommen bald!</small>';
-    msg(`GESCHAFFT!<small>Zeit ${fmtTime(F)} · ${LV.winText}</small>${next}`, 1e9);
-    const b = $('next'); if (b) b.onclick = () => { location.search = '?level=' + (LEVEL + 1); };
-  }
-  for (const h of LV.hazards) h.update && h.update(F, P);
-  if (P.inv > 0) P.inv--;
-}
-
-/* ---------- Posen ---------- */
-function pose(h, t) {
-  const { body, arms, feet } = h.userData;
-  body.position.y = 0.95; body.rotation.set(0, 0, 0); body.scale.set(1, 1, 1);
-  arms.forEach(a => a.rotation.set(0, 0, 0));
-  feet.forEach(f => { f.position.y = 0; f.position.z = 0.12; });
-  const spd = Math.hypot(P.vx - (P.on ? P.on.dx : 0), P.vz - (P.on ? P.on.dz : 0));
-  if (!P.ground) {
-    body.rotation.x = P.vy > 0 ? -0.15 : 0.15;
-    arms[0].rotation.x = arms[1].rotation.x = -2.3; arms[0].rotation.z = -0.4; arms[1].rotation.z = 0.4;
-    feet[0].position.set(-0.34, 0.25, 0.3); feet[1].position.set(0.34, 0.15, -0.05);
-    body.scale.set(0.95, 1.06, 0.95);
-  } else if (spd > 0.02) {
-    P.anim += spd * 1.6; const s = Math.sin(P.anim), c = Math.cos(P.anim);
-    feet[0].position.z = 0.12 + s * 0.32; feet[0].position.y = Math.max(0, c) * 0.18;
-    feet[1].position.z = 0.12 - s * 0.32; feet[1].position.y = Math.max(0, -c) * 0.18;
-    body.position.y += Math.abs(s) * 0.08; body.rotation.x = 0.2; body.rotation.z = s * 0.05;
-    arms[0].rotation.x = -s * 0.9; arms[1].rotation.x = s * 0.9;
-  } else {
-    body.position.y += Math.sin(t * 3) * 0.025;
-    body.scale.set(1 + Math.sin(t * 3) * 0.012, 1 - Math.sin(t * 3) * 0.012, 1);
-  }
-}
-
-/* ---------- Darstellung ---------- */
-const camPos = new THREE.Vector3(), camLook = new THREE.Vector3();
-const camTarget = () => [new THREE.Vector3(P.x * 0.55, P.gy + Math.max(0, P.y - P.gy) * 0.5 + 2.1, P.z - 3.9), new THREE.Vector3(P.x * 0.7, P.gy + Math.max(-1, P.y - P.gy) * 0.6 + 0.8, P.z + 3.5)];
-function snapCam() { const [a, b] = camTarget(); camPos.copy(a); camLook.copy(b); }
-function fmtTime(f) { const s = f / 60; return (s / 60 | 0) + ':' + String((s % 60).toFixed(1)).padStart(4, '0'); }
-function draw(t) {
-  hamster.position.set(P.x, P.y, P.z);
-  let d = P.face - hamster.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); hamster.rotation.y += d * 0.25;
-  hamster.visible = !(P.inv > 0 && (P.inv >> 2) % 2) || P.dead > 0;
-  pose(hamster, t);
-  const [a, b] = camTarget(); camPos.lerp(a, 0.12); camLook.lerp(b, 0.15);
-  camera.position.copy(camPos); camera.lookAt(camLook);
-  const so = LV.light.sunOff; sun.position.set(P.x + so[0], P.y + so[1], P.z + so[2]); sun.target.position.set(P.x, P.y, P.z + 2);
-  lamp.position.set(P.x, P.y + 2.6, P.z + 1.5);
-  for (const m of LV.movers) { m.mesh.position.set(m.x, m.y, m.z); m.draw && m.draw(F); }
-  for (const h of LV.hazards) h.draw && h.draw(F, P);
-  LV.draw && LV.draw(F);
-  $('time').textContent = fmtTime(P.done ? P.endF : F);
-  $('prog').firstElementChild.style.width = Math.max(0, Math.min(1, LV.progress(P))) * 100 + '%';
-  renderer.render(scene, camera);
-}
-
-function resize() { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
-addEventListener('resize', resize); resize();
-updHud(); snapCam();
-msg(`LEVEL ${LEVEL}: ${LV.name}<small>${LV.sub}</small>`, 150);
-
-window.__LV = LV;
-// Test-Hook für Vorschaubilder
-window.__sim = (n, inp = {}, place) => {
-  if (inp.clearMsg) { $('msg').style.transition = 'none'; }
-  if (place) { Object.assign(P, place); if (place.y !== undefined) P.gy = place.y; snapCam(); }
-  for (let i = 0; i < n; i++) { IN.x = inp.x || 0; IN.z = inp.z || 0; IN.jump = !!(inp.jumpAt && inp.jumpAt.includes(i)); step(); }
-  if (inp.clearMsg && !P.done) { P.msgT = 0; $('msg').style.opacity = 0; }
-  draw(F / 60); return { x: +P.x.toFixed(2), y: +P.y.toFixed(2), z: +P.z.toFixed(2), hp: P.hp, done: P.done, cp: P.cp, on: !!P.on };
-};
-
-if (!QS.has('shot')) {
-  let acc = 0, last = performance.now();
-  renderer.setAnimationLoop(() => {
-    const now = performance.now(); acc += Math.min(100, now - last); last = now;
-    while (acc >= 1000 / 60) { readInput(); step(); acc -= 1000 / 60; }
-    draw(now / 1000);
-  });
-}
-</script>
+<div id="title" class="screen show">
+  <div class="logo"><b>MEDIEN<br>HAMSTER</b><span>3D · Backstage-Abenteuer</span><em>„Juckt die Fresse?“</em></div>
+  <button id="btnPlay" class="btn">SPIELEN ›</button>
+  <div id="cards"></div>
+  <div class="row"><button id="btnOpt" class="btn ghost">Optionen</button></div>
+  <div class="foot">Handy: links wischen = laufen · rechts tippen = springen (nochmal in der Luft = Doppelsprung)<br>PC: WASD / Pfeile + Leertaste · Kein Ton? Stummschalter am iPhone prüfen.</div>
+</div>
+<div id="options" class="screen dim">
+  <h2>Optionen</h2>
+  <button id="optMusic" class="btn ghost">Musik</button>
+  <button id="optSfx" class="btn ghost">Sounds</button>
+  <button id="optGfx" class="btn ghost">Grafik</button>
+  <button id="btnOptBack" class="btn">Zurück</button>
+</div>
+<div id="pause" class="screen dim">
+  <h2>Pause</h2>
+  <button id="btnResume" class="btn">Weiter</button>
+  <div class="row"><button id="btnRestart" class="btn ghost">Level neu starten</button><button id="btnPauseOpt" class="btn ghost">Optionen</button></div>
+  <button id="btnMenu" class="btn ghost">Hauptmenü</button>
+</div>
+<div id="win" class="screen dim">
+  <h2>GESCHAFFT!</h2>
+  <div id="winText"></div>
+  <button id="btnNext" class="btn">Weiter ›</button>
+  <div class="row"><button id="btnAgain" class="btn ghost">Nochmal</button><button id="btnWinMenu" class="btn ghost">Hauptmenü</button></div>
+</div>
+<script type="module" src="js/game.js?v=10"></script>
 </body>
 </html>
