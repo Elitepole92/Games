@@ -165,7 +165,7 @@ export const MAT = {
   grille: std({ map: T.grille, roughness: 0.7 }),
   curtain: std({ map: T.curtain, roughness: 1 }),
   stage: std({ map: T.stage, roughness: 0.72 }),
-  water: phys({ color: '#0d1720', roughness: 0.05, metalness: 0.2, clearcoat: 1, clearcoatRoughness: 0.03, polygonOffset: true, polygonOffsetFactor: -2 }),
+  water: phys({ color: '#0d1720', roughness: 0.22, metalness: 0.1, clearcoat: 0.6, clearcoatRoughness: 0.2, polygonOffset: true, polygonOffsetFactor: -2 }),
   // leuchtende Materialien (HDR-Werte > 1 → Bloom)
   neon: new THREE.MeshBasicMaterial({ color: new THREE.Color(3.2, 3.4, 3.6) }),
   neonOff: std({ color: '#3a3d44', roughness: 0.3 }),

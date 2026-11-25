@@ -80,14 +80,14 @@ function buildParticles() {
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.setAttribute('size', new THREE.BufferAttribute(size, 1));
   const mat = new THREE.ShaderMaterial({
     uniforms: { map: { value: T.puff }, scale: { value: innerHeight } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, vertexColors: true,
-    vertexShader: 'attribute float size; varying vec3 vC; void main(){ vC = color; vec4 mv = modelViewMatrix * vec4(position,1.0); gl_PointSize = size * 220.0 / -mv.z; gl_Position = projectionMatrix * mv; }',
+    vertexShader: 'attribute float size; varying vec3 vC; void main(){ vC = color; vec4 mv = modelViewMatrix * vec4(position,1.0); gl_PointSize = min(size * 220.0 / -mv.z, 42.0); gl_Position = projectionMatrix * mv; }',
     fragmentShader: 'uniform sampler2D map; varying vec3 vC; void main(){ vec4 t = texture2D(map, gl_PointCoord); gl_FragColor = vec4(vC * 1.1, t.a); }'
   });
   const pts = new THREE.Points(geo, mat); pts.frustumCulled = false; scene.add(pts);
   partSys = { N, pos, col, size, geo, p: Array.from({ length: N }, () => ({ life: 0 })) , i: 0 };
 }
 G.burst = (x, y, z, kind = 'spark', n = 12) => {
-  const S = partSys, C = { spark: [1, 0.9, 0.5], tape: [0.7, 0.6, 1], dust: [0.11, 0.1, 0.1], blue: [0.4, 0.7, 1.4], confetti: null, steam: [0.6, 0.6, 0.65], heal: [1, 0.5, 0.6] }[kind];
+  const S = partSys, C = { spark: [1, 0.9, 0.5], tape: [0.7, 0.6, 1], dust: [0.11, 0.1, 0.1], blue: [0.25, 0.45, 0.9], confetti: null, steam: [0.6, 0.6, 0.65], heal: [1, 0.5, 0.6] }[kind];
   for (let k = 0; k < n; k++) {
     const p = S.p[S.i = (S.i + 1) % S.N], a = Math.random() * Math.PI * 2, sp = kind === 'dust' ? 0.04 : kind === 'confetti' ? 0.12 : 0.09;
     Object.assign(p, { x, y, z, vx: Math.cos(a) * sp * Math.random(), vy: (kind === 'dust' ? 0.02 : 0.05) + Math.random() * (kind === 'confetti' ? 0.18 : 0.1), vz: Math.sin(a) * sp * Math.random(), life: 1, dec: kind === 'dust' ? 0.025 : 0.02 + Math.random() * 0.02, g: kind === 'dust' ? 0.0 : 0.006, sz: kind === 'dust' ? 0.6 : kind === 'confetti' ? 0.25 : 0.3, c: C || [[1, 0.3, 0.3], [0.4, 0.8, 1], [1, 0.9, 0.3], [0.7, 0.4, 1], [0.4, 1, 0.5]][k % 5] });
