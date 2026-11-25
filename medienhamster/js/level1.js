@@ -277,6 +277,8 @@ export function level1(G, LV) {
   };
   LV.solids.push({ x1: -1.25, x2: 1.25, y1: 0, y2: 3.0, z1: EZ - 0.12, z2: EZ + 0.02, door: true });
   LV.onRespawn = () => { };
+  LV.transition = 'elevator';
+  LV.camera = p => p.won ? { pos: new THREE.Vector3(0, 1.85, 448.4), look: new THREE.Vector3(0, 1.25, 455) } : null;
   LV.draw = (F, RF, p) => { for (const a of A) a(F, RF, p); for (const l of LV.lights) if (l.follow) { l.x = l.follow.x; l.z = l.follow.z; } };
 }
 

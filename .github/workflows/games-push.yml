@@ -1,0 +1,32 @@
+name: Games – Push senden
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: Überschrift (optional – der App-Name steht auf dem Handy schon dabei)
+        required: false
+        default: ''
+      body:
+        description: Text der Nachricht
+        required: true
+      game:
+        description: Für welches Spiel? (Ordnername, z. B. medienhamster – oder „alle“)
+        required: false
+        default: medienhamster
+permissions:
+  contents: read
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-save web-push@3.6.7
+      - run: node .github/scripts/games-push.js
+        env:
+          VAPID_PRIVATE_KEY: ${{ secrets.GAMES_VAPID_PRIVATE_KEY }}
+          PUSH_TITLE: ${{ inputs.title }}
+          PUSH_BODY: ${{ inputs.body }}
+          PUSH_GAME: ${{ inputs.game }}

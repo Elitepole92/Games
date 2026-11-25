@@ -223,12 +223,11 @@ export function buildHamster() {
   add(deformGeo(new THREE.SphereGeometry(1, 64, 44)), HM.fur);
   add(deformGeo(new THREE.SphereGeometry(1.035, 64, 18, PI * 0.74, PI * 1.52, PI * 0.42, PI * 0.34), 1.035), HM.vest);
   // Bauhelm
-  const helm = new THREE.Group(); helm.position.set(0, 0.5, 0.02); helm.rotation.x = -0.1; body.add(helm);
+  const helm = new THREE.Group(); helm.position.set(0, 0.55, 0.0); helm.rotation.x = -0.08; body.add(helm);
   const prof = [[0.001, 0.6], [0.2, 0.585], [0.36, 0.54], [0.48, 0.45], [0.57, 0.33], [0.625, 0.2], [0.648, 0.08], [0.655, 0.02], [0.7, 0.0], [0.72, -0.025], [0.69, -0.045], [0.6, -0.035]].map(([r, y]) => new THREE.Vector2(r, y));
   add(new THREE.LatheGeometry(prof, 56), HM.helmet, null, [1, 1, 1.06], null, helm);
   add(new THREE.CylinderGeometry(0.8, 0.82, 0.03, 40, 1, false, -0.8, 1.6), HM.helmet, [0, -0.012, 0.02], [1, 1, 1.12], [0.16, 0, 0], helm);
   const rp = prof.slice(0, 8), rpts = [...rp.slice().reverse().map(v => new V3(0, v.y + 0.012, -v.x * 1.06)), ...rp.slice(1).map(v => new V3(0, v.y + 0.012, v.x * 1.06))];
-  add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(rpts), 48, 0.045, 8), HM.helmet, null, null, null, helm);
   for (const s of [-1, 1]) { const st = add(new THREE.CircleGeometry(0.1, 24), HM.sticker, [s * 0.555, 0.3, 0.06], null, null, helm); st.quaternion.setFromUnitVectors(new V3(0, 0, 1), new V3(s * 0.85, 0.52, 0.1).normalize()); st.castShadow = false; }
   const lampG = new THREE.Group(); lampG.position.set(0, 0.3, 0.6); lampG.rotation.x = -0.35; helm.add(lampG);
   add(new RoundedBoxGeometry(0.2, 0.13, 0.1, 2, 0.03), HM.helmet, null, null, null, lampG);

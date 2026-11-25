@@ -4,6 +4,7 @@ import { buildHamster, MAT, T, tapeGeos, buildBrezel } from './models.js?v=10';
 import { AU, audioUnlock, setMusic, musicTick, sfx, jingle, setAudio, renderTrackOffline, renderOffline, JINGLES } from './audio.js?v=10';
 import { level1 } from './level1.js?v=10';
 import { level2 } from './level2.js?v=10';
+import { pushState, pushEnable, IOS } from './push.js?v=10';
 
 const LEVELS = [{ build: level1, name: 'Katakomben der Messe', short: 'KATAKOMBEN' }, { build: level2, name: 'Mainstage', short: 'MAINSTAGE' }];
 const R = 0.42, H = 1.2, SPEED = 0.118, GRAV = 0.017, JUMP = 0.305, STEP = 0.45, COYOTE = 7, BUFFER = 9;
@@ -19,7 +20,8 @@ export const G = { P, R, H, JUMP, get F() { return F; }, get state() { return st
    SZENE AUFBAUEN
    ===================================================================== */
 let hamster, blob, sun, hemi, headlamp, pool = [], tapeIM = null, partSys = null;
-function startLevel(n, toState = 'play') {
+function startLevel(n, toState = 'play', fromRide = false) {
+  if (!fromRide) { rideId++; $('fade').classList.remove('on'); $('elev').classList.remove('on'); }
   LEVEL = n; F = 0; RF = 0;
   scene.clear(); reseed(7 + n * 101);
   G.batch = new Batch(24);
@@ -41,9 +43,9 @@ function startLevel(n, toState = 'play') {
   const c = LV.cps[0]; Object.assign(P, { x: c.x, y: c.y, z: c.z, gy: c.y, vx: 0, vy: 0, vz: 0, ground: true, face: c.face || 0, hp: 3, hpMax: 3, inv: 0, cp: 0, jumps: 0, dead: 0, won: false, on: null, tapes: 0, hits: 0, ext: [0, 0] });
   hamster.rotation.y = P.face;
   snapCam(); updHud(); hideMsg(); bubbles.forEach(b => b.el.remove()); bubbles.length = 0;
-  $('boss').style.display = 'none';
+  $('boss').style.display = 'none'; $('prog').style.display = '';
   setState(toState);
-  if (toState === 'play') { setMusic(LV.music); showMsg(`LEVEL ${n}<small>${LEVELS[n - 1].name}</small>`, 170); }
+  if (toState === 'play') { setMusic(LV.music); if (!LV.intro) showMsg(`LEVEL ${n}<small>${LEVELS[n - 1].name}</small>`, 170); }
 }
 G.startLevel = startLevel;
 
@@ -85,10 +87,10 @@ function buildParticles() {
   partSys = { N, pos, col, size, geo, p: Array.from({ length: N }, () => ({ life: 0 })) , i: 0 };
 }
 G.burst = (x, y, z, kind = 'spark', n = 12) => {
-  const S = partSys, C = { spark: [1, 0.9, 0.5], tape: [0.7, 0.6, 1], dust: [0.35, 0.33, 0.32], blue: [0.4, 0.7, 1.4], confetti: null, steam: [0.6, 0.6, 0.65], heal: [1, 0.5, 0.6] }[kind];
+  const S = partSys, C = { spark: [1, 0.9, 0.5], tape: [0.7, 0.6, 1], dust: [0.11, 0.1, 0.1], blue: [0.4, 0.7, 1.4], confetti: null, steam: [0.6, 0.6, 0.65], heal: [1, 0.5, 0.6] }[kind];
   for (let k = 0; k < n; k++) {
     const p = S.p[S.i = (S.i + 1) % S.N], a = Math.random() * Math.PI * 2, sp = kind === 'dust' ? 0.04 : kind === 'confetti' ? 0.12 : 0.09;
-    Object.assign(p, { x, y, z, vx: Math.cos(a) * sp * Math.random(), vy: (kind === 'dust' ? 0.02 : 0.05) + Math.random() * (kind === 'confetti' ? 0.18 : 0.1), vz: Math.sin(a) * sp * Math.random(), life: 1, dec: kind === 'dust' ? 0.025 : 0.02 + Math.random() * 0.02, g: kind === 'dust' ? 0.0 : 0.006, sz: kind === 'dust' ? 0.9 : kind === 'confetti' ? 0.25 : 0.32, c: C || [[1, 0.3, 0.3], [0.4, 0.8, 1], [1, 0.9, 0.3], [0.7, 0.4, 1], [0.4, 1, 0.5]][k % 5] });
+    Object.assign(p, { x, y, z, vx: Math.cos(a) * sp * Math.random(), vy: (kind === 'dust' ? 0.02 : 0.05) + Math.random() * (kind === 'confetti' ? 0.18 : 0.1), vz: Math.sin(a) * sp * Math.random(), life: 1, dec: kind === 'dust' ? 0.025 : 0.02 + Math.random() * 0.02, g: kind === 'dust' ? 0.0 : 0.006, sz: kind === 'dust' ? 0.6 : kind === 'confetti' ? 0.25 : 0.3, c: C || [[1, 0.3, 0.3], [0.4, 0.8, 1], [1, 0.9, 0.3], [0.7, 0.4, 1], [0.4, 1, 0.5]][k % 5] });
   }
 };
 function drawParticles() {
@@ -174,6 +176,7 @@ function stepMovers() {
 }
 
 function playerStep() {
+  if (LV.intro && F < LV.intro.walk) { IN.jump = false; IN.x = 0; IN.z = F < LV.intro.lock ? 0 : 1; }
   const boxes = nearBoxes();
   const slow = LV.slow ? LV.slow(P) : 1, sp = SPEED * slow, acc = P.ground ? 0.24 : 0.1;
   P.vx += (IN.x * sp - P.vx) * acc; P.vz += (IN.z * sp - P.vz) * acc;
@@ -214,6 +217,7 @@ function step() {
   if (msgT > 0 && --msgT === 0) hideMsg();
   stepMovers();
   if (state === 'play') {
+    if (LV.intro && F === LV.intro.walk) showMsg(`LEVEL ${LEVEL}<small>${LEVELS[LEVEL - 1].name}</small>`, 150);
     if (P.dead > 0) { if (--P.dead === 0) respawn(true); }
     else if (!P.won) {
       playerStep();
@@ -241,11 +245,27 @@ function step() {
   }
 }
 function win(text) {
-  if (P.won) return; P.won = true; P.winF = F; jingle('win'); sfx('cheer', 0.6);
-  G.burst(P.x, P.y + 1.5, P.z, 'confetti', 60);
+  if (P.won) return; P.won = true; P.winF = F;
   const prev = save.best[LEVEL]; if (!prev || F < prev) save.best[LEVEL] = F;
   save.tapes[LEVEL] = Math.max(save.tapes[LEVEL] || 0, P.tapes); save.unlocked = Math.max(save.unlocked, Math.min(LEVELS.length, LEVEL + 1)); store();
+  if (LV.transition === 'elevator' && LEVEL < LEVELS.length) { elevatorRide(prev); return; }
+  jingle('win'); sfx('cheer', 0.6); G.burst(P.x, P.y + 1.5, P.z, 'confetti', 60);
   setTimeout(() => showWin(text || LV.winText, prev), 1600);
+}
+// Aufzugfahrt: Türen zu → Abblenden → Etagenanzeige mit Zwischenstand → nächstes Level startet im Aufzug
+let rideId = 0;
+function elevatorRide(prev) {
+  const id = ++rideId, lvl = LEVEL, fade = $('fade'), card = $('elev'), floorEl = card.querySelector('.floor');
+  const later = (ms, fn) => setTimeout(() => { if (id === rideId) fn(); }, ms);
+  jingle('win', false); sfx('cheer', 0.4);
+  card.querySelector('b').textContent = `LEVEL ${lvl} GESCHAFFT!`;
+  card.querySelector('.stats2').innerHTML = `<span>⏱ ${fmtTime(P.winF)}${!prev || P.winF < prev ? ' · <em>Bestzeit!</em>' : ''}</span><span>🎞 ${P.tapes} / ${LV.tapes.length}</span><span>💥 ${P.hits}</span>`;
+  floorEl.textContent = '−2';
+  later(1700, () => { fade.classList.add('on'); sfx('rumble', 0.5, { dur: 2.6 }); });
+  later(2200, () => card.classList.add('on'));
+  ['−1', '0', 'B'].forEach((f, i) => later(2900 + i * 650, () => { floorEl.textContent = f; sfx('blip', 0.9, { f: 990 }); }));
+  later(4900, () => { sfx('ding', 0.9); startLevel(lvl + 1, 'play', true); });
+  later(5300, () => { card.classList.remove('on'); fade.classList.remove('on'); });
 }
 G.win = win;
 
@@ -259,6 +279,7 @@ function pose(t) {
   feet.forEach((f, i) => { f.position.set(i ? 0.34 : -0.34, 0, 0.1); f.rotation.set(0, 0, 0); });
   const spd = Math.hypot(P.vx - (P.on ? P.on.dx : 0), P.vz - (P.on ? P.on.dz : 0));
   if (P.dead > 0) { body.rotation.z = Math.min(1.4, (110 - P.dead) * 0.05); body.position.y = 0.75; eyes.forEach(e => e.lid.rotation.x = 1.5); return; }
+  if (P.won && LV.transition === 'elevator') { let d = Math.PI - hamster.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); hamster.rotation.y += d * 0.12; arms[1].rotation.x = -2.7; arms[1].rotation.z = 0.5 + Math.sin(F * 0.3) * 0.45; body.position.y += Math.sin(t * 2.6) * 0.02; return; }
   if (P.won) { const k = (F - P.winF) * 0.18; body.position.y += Math.abs(Math.sin(k)) * 0.5; arms.forEach((a, i) => { a.rotation.x = -2.6; a.rotation.z = (i ? 1 : -1) * (0.5 + Math.sin(k * 2) * 0.3); }); hamster.rotation.y += 0.04; return; }
   if (!P.ground) {
     const up = P.vy > 0; body.rotation.x = up ? -0.18 : 0.12;
@@ -332,7 +353,7 @@ function draw(dt) {
   for (const m of LV.movers) if (m.active !== false && Math.abs(P.x - m.x) < m.w / 2 && Math.abs(P.z - m.z) < m.d / 2 && m.y + m.h <= P.y + 0.1 && m.y + m.h > gy) gy = m.y + m.h;
   blob.visible = gy > -50; if (blob.visible) { const hgt = P.y - gy, s = clamp(1.1 - hgt * 0.12, 0.4, 1.1); blob.position.set(P.x, gy + 0.015, P.z); blob.scale.setScalar(s); blob.material.opacity = clamp(1 - hgt * 0.12, 0.25, 1); }
   // Kamera
-  if (state === 'title') { const a = t * 0.15; camPos.set(P.x + Math.sin(a) * 4.2, P.y + 1.9, P.z + Math.cos(a) * 4.2); camLook.set(P.x, P.y + 0.8, P.z); hamster.rotation.y = a * 0.3; }
+  if (state === 'title' || state === 'pushbox' || state === 'options') { const a = Math.sin(t * 0.13) * 0.9, wide = innerWidth / innerHeight > 1.33 && innerWidth >= 700; camPos.set(P.x + Math.sin(a) * 3.6, P.y + 1.5, P.z + Math.cos(a) * 3.6); camLook.set(P.x, P.y + 0.75, P.z); if (wide) { const f = camLook.clone().sub(camPos).normalize(), r = f.clone().cross(new THREE.Vector3(0, 1, 0)).normalize(); camLook.addScaledVector(r, -1.55); } hamster.rotation.y = a * 0.9; }
   else { const c = camTarget(); camPos.lerp(c.pos, c.snap ? 1 : 0.1); camLook.lerp(c.look, c.snap ? 1 : 0.14); }
   camera.position.copy(camPos);
   if (shakeA > 0.001) { camera.position.x += (Math.random() - 0.5) * shakeA; camera.position.y += (Math.random() - 0.5) * shakeA; shakeA *= 0.86; }
@@ -386,9 +407,9 @@ G.boss = (show, name, hp, max) => { const el = $('boss'); el.style.display = sho
 function setState(s) {
   state = s;
   document.body.dataset.state = s;
-  for (const id of ['title', 'options', 'pause', 'win']) $(id).classList.toggle('show', id === s);
+  for (const id of ['title', 'options', 'pause', 'win', 'pushbox']) $(id).classList.toggle('show', id === s);
   $('hud').style.display = (s === 'play' || s === 'pause') ? '' : 'none';
-  if (s === 'title') { setMusic('menu'); renderLevelCards(); }
+  if (s === 'title') { setMusic('menu'); renderLevelCards(); syncBell(); }
 }
 function renderLevelCards() {
   $('cards').innerHTML = LEVELS.map((L, i) => {
@@ -421,8 +442,29 @@ function bindMenus() {
   on('optMusic', () => { setAudio(!AU.musicOn, AU.sfxOn); syncOpts(); });
   on('optSfx', () => { setAudio(AU.musicOn, !AU.sfxOn); syncOpts(); });
   on('optGfx', () => { setGfx(!GFX.high); syncOpts(); });
+  on('btnBell', () => openPush());
+  on('pushNo', () => setState('title'));
+  $('pushYes').addEventListener('click', async e => {
+    e.stopPropagation(); const st = pushState(), msg = $('pushMsg');
+    if (st === 'install' || st === 'unsupported' || st === 'denied') { setState('title'); return; }
+    msg.textContent = 'Einen Moment …';
+    try { const r = await pushEnable(); msg.textContent = r === 'on' ? 'Push ist an – wir melden uns! 🔔' : r === 'later' ? 'Push ist an, Anmeldung wird später nachgeholt.' : 'Okay, dann nicht.'; if (r !== 'denied') sfx('cp'); }
+    catch (err) { msg.textContent = 'Hat nicht geklappt – später nochmal probieren.'; }
+    syncBell(); setTimeout(() => { if (state === 'pushbox') setState('title'); }, 1800);
+  });
 }
 let optFrom = 'title';
+function syncBell() { const st = pushState(), b = $('btnBell'); b.style.display = st === 'unsupported' && !IOS ? 'none' : ''; b.classList.toggle('on', st === 'on'); b.textContent = st === 'on' ? '🔔 Benachrichtigungen an' : '🔔 Benachrichtigungen'; }
+function openPush() {
+  const st = pushState(), txt = $('pushText'), yes = $('pushYes'), no = $('pushNo'); $('pushMsg').textContent = '';
+  yes.style.display = ''; no.textContent = 'Lieber nicht';
+  if (st === 'install') { txt.innerHTML = 'Auf dem iPhone klappt das nur als App:<br>Teilen-Symbol <b>⬆︎</b> → <b>„Zum Home-Bildschirm“</b>, dann den Medienhamster von dort starten und hier nochmal auf die Glocke tippen.'; yes.style.display = 'none'; no.textContent = 'Alles klar'; }
+  else if (st === 'denied') { txt.textContent = 'Benachrichtigungen sind in den Einstellungen deines Geräts für diese Seite blockiert. Dort kannst du sie wieder erlauben.'; yes.style.display = 'none'; no.textContent = 'Okay'; }
+  else if (st === 'on') { txt.textContent = 'Benachrichtigungen sind schon an – wir sagen Bescheid, wenn es Neues gibt. 🔔'; yes.style.display = 'none'; no.textContent = 'Super'; }
+  else if (st === 'unsupported') { txt.textContent = 'Dein Browser unterstützt leider keine Push-Benachrichtigungen.'; yes.style.display = 'none'; no.textContent = 'Okay'; }
+  else txt.textContent = 'Sollen wir dir kurz Bescheid sagen, wenn es neue Level oder Spiele gibt? Selten und ohne Werbung.';
+  setState('pushbox');
+}
 function syncOpts() { $('optMusic').textContent = 'Musik: ' + (AU.musicOn ? 'AN' : 'AUS'); $('optSfx').textContent = 'Sounds: ' + (AU.sfxOn ? 'AN' : 'AUS'); $('optGfx').textContent = 'Grafik: ' + (GFX.high ? 'HOCH' : 'SPARSAM'); }
 
 /* =====================================================================
@@ -482,6 +524,7 @@ window.__G = {
   G, P, get LV() { return LV; }, get F() { return F; }, set F(v) { F = v; }, startLevel, setState, IN,
   sim(n, inp = {}) { for (let i = 0; i < n; i++) { IN.x = inp.x || 0; IN.z = inp.z || 0; const j = !!(inp.jumpAt && inp.jumpAt.includes(i)) || (inp.jumpEvery && i % inp.jumpEvery === 0); IN.jump = j; IN.held = j; step(); if (inp.until && inp.until(P)) break; } draw(16); return { x: +P.x.toFixed(2), y: +P.y.toFixed(2), z: +P.z.toFixed(2), hp: P.hp, cp: P.cp, won: P.won, tapes: P.tapes, dead: P.dead }; },
   frame() { draw(16); },
+  cam: camera, render, scene, hamster: () => hamster,
   stepN(n, fn) { for (let i = 0; i < n; i++) { if (fn && fn(P, LV, IN) === false) return i; step(); } return n; },
   track: (name, secs) => renderTrackOffline(name, secs),
   jingleWav: (name) => renderOffline((b, c) => JINGLES[name](b, 0.05), 3),

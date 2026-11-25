@@ -10,15 +10,26 @@ export function level2(G, LV) {
   const W = 7, DECK = 1.6, TZ = 64, TY = 8.6, WZ1 = TZ - 1.2, WZ2 = TZ + 1.2;
   Object.assign(LV, {
     name: 'MAINSTAGE', music: 'stage', fog: ['#07060b', 18, 72], hemi: ['#8790c4', '#1c1622', 0.7], sun: ['#dfe6ff', 1.0], envInt: 0.45,
-    z1: -3, z2: 69.4, deathY: -5, winText: 'Der Rigger gibt auf – die Traverse gehört dir!', noCpHeal: false
+    z1: -5.9, z2: 69.4, deathY: -5, winText: 'Der Rigger gibt auf – die Traverse gehört dir!', noCpHeal: false
   });
   LV.bx = () => W; LV.ceil = z => z < 22 ? 6.8 : 40;
   const solid = (x1, x2, y1, y2, z1, z2, mat, o) => K.solid(x1, x2, y1, y2, z1, z2, mat, o);
 
   /* ---------- Backstage ---------- */
-  solid(-W - 0.3, W + 0.3, -6, 0, -3.5, 22, MAT.floor, { tile: 4 });
+  solid(-W - 0.3, W + 0.3, -6, 0, -6.6, 22, MAT.floor, { tile: 4 });
   for (const s of [-1, 1]) K.box(0.3, 7, 26, MAT.wall, s * (W + 0.15), 3.5, 9.5, 14, 0, false, 7);
-  K.box(W * 2, 7, 0.3, MAT.wall, 0, 3.5, -3.6, 14, 0, false, 7); K.box(W * 2 + 0.6, 0.3, 26, MAT.ceil, 0, 7.15, 9.5, 3, 0, false);
+  for (const s of [-1, 1]) K.box(W - 1.4, 7, 0.3, MAT.wall, s * (W + 1.4) / 2, 3.5, -3.6, 14, 0, false, 7);
+  K.box(2.8, 3.8, 0.3, MAT.wall, 0, 5.1, -3.6, 2.8, 0, false, 3.8); K.box(W * 2 + 0.6, 0.3, 26, MAT.ceil, 0, 7.15, 9.5, 3, 0, false);
+  // Aufzug (Ankunft aus Level 1)
+  for (const s of [-1, 1]) { K.solid(s > 0 ? 1.3 : -1.6, s > 0 ? 1.6 : -1.3, 0, 3.3, -6.4, -3.5, MAT.steel, { tile: 2 }); K.box(0.16, 3.3, 0.14, MAT.chrome, s * 1.33, 1.65, -3.38, 0, 0, false); }
+  K.solid(-1.6, 1.6, 0, 3.3, -6.7, -6.4, MAT.steel, { tile: 2 }); K.box(2.9, 0.1, 2.9, MAT.glowWarm, 0, 3.25, -5.0, 0, 0, false); K.box(3.0, 0.14, 0.14, MAT.chrome, 0, 3.28, -3.38, 0, 0, false);
+  K.box(2.6, 0.06, 0.06, MAT.chrome, 0, 1.0, -6.35, 0, 0, false); K.light(0, 2.7, -5.0, '#ffd9a0', 10, 6);
+  K.sign('BÜHNE', 'Aufzug · Ebene 0', '#139a48', 0, 3.75, -3.43, 0, 1.6, null, true);
+  const eDoors = [-1, 1].map(s => { const d = new THREE.Mesh(boxGeo(1.3, 3.2, 0.08, 1.5), MAT.steel); d.position.set(s * 0.65, 1.6, -3.4); d.castShadow = true; scene.add(d); return [d, s]; });
+  const eDoorSolid = { x1: -1.3, x2: 1.3, y1: 0, y2: 3.2, z1: -3.48, z2: -3.32 }; LV.solids.push(eDoorSolid);
+  let eOpen = 0;
+  A.push(() => eDoors.forEach(([d, s]) => d.position.x = s * (0.65 + eOpen * 1.3)));
+  LV.intro = { lock: 48, walk: 128 };
   for (let z = 2; z < 22; z += 6) K.neon(0, 6.85, z, { flicker: z === 14 });
   K.sign('MAINSTAGE ›', 'Nur Crew & Künstler', '#8e44ff', -W + 0.03, 2.8, 5, Math.PI / 2, 3);
   K.sign('BACKSTAGE', 'Achtung Case-Verkehr!', '#c0392b', W - 0.03, 2.8, 4, -Math.PI / 2, 3);
@@ -79,7 +90,8 @@ export function level2(G, LV) {
   const lightTruss = new THREE.Mesh(trussGeo(-W + 0.4, W - 0.4, 9.6, 38, 0.6), MAT.alu); scene.add(lightTruss);
   for (const s of [-1, 1]) scene.add(new THREE.Mesh(towerGeo(s * (W - 0.1), 38, 9.9), MAT.alu));
   solid(-6.5, 6.5, TY - 0.6, TY, WZ1, WZ2, null);
-  K.box(13, 0.06, 2.4, MAT.grate, 0, TY + 0.03, TZ, 1.2, 0, true); for (const z of [WZ1 + 0.05, WZ2 - 0.05]) K.box(13, 0.07, 0.1, MAT.hazard, 0, TY + 0.06, z, 0.5, 0, false);
+  const walkMat = MAT.grate.clone(); walkMat.metalness = 0.2; walkMat.roughness = 0.8;
+  K.box(13, 0.06, 2.4, walkMat, 0, TY + 0.03, TZ, 1.2, 0, true); for (const z of [WZ1 + 0.05, WZ2 - 0.05]) K.box(13, 0.07, 0.1, MAT.hazard, 0, TY + 0.06, z, 0.5, 0, false);
   for (const s of [-1, 1]) solid(s > 0 ? 6.5 : -W, s > 0 ? W : -6.5, TY - 0.6, TY + 3, WZ1, WZ2, null);
   const roof = new THREE.Mesh(trussGeo(-W, W, TY + 9.5, TZ, 0.9), MAT.darkMetal); scene.add(roof);
   for (const x of [-5, -2, 2, 5]) { const h = buildHoist(); h.position.set(x, TY + 8.7, TZ - 0.9); scene.add(h); const c = chainMesh(8.4); c.position.set(x, TY + 8.5, TZ - 0.9); scene.add(c); }
@@ -119,7 +131,7 @@ export function level2(G, LV) {
 
   /* ---------- Checkpoints ---------- */
   LV.cps = [
-    { x: 0, y: 0, z: 0, at: () => true },
+    { x: 0, y: 0, z: -5.0, at: () => true },
     { x: 0, y: DECK, z: 27.6, at: p => p.z > 27 && p.y > 1, px: 3.6 },
     { x: 5.2, y: 4.0, z: 59.2, at: p => p.z > 57.2 && p.y > 3.8, px: 6.4 },
     { x: 4.6, y: TY, z: TZ, at: p => p.y > TY - 0.15 && p.z > WZ1 - 0.1, noPost: true, face: -Math.PI / 2 }
@@ -141,16 +153,17 @@ export function level2(G, LV) {
   A.push((F) => {
     beams.forEach(({ g, i }) => { g.rotation.z = Math.sin(F * 0.02 + i) * 0.5; g.rotation.x = Math.cos(F * 0.017 + i * 1.7) * 0.4; });
     spots.forEach((s, i) => s.target.position.set(Math.sin(F * 0.015 + i * 3) * 5, DECK, 44 + Math.cos(F * 0.012 + i) * 8));
-    follow.intensity = boss.st !== 'wait' ? 260 : 0; follow.target.position.set(P.x, P.y + 0.5, P.z);
+    follow.intensity = boss.st !== 'wait' ? 38 : 0; follow.target.position.set(P.x, P.y + 0.5, P.z);
   });
 
   /* =====================================================================
      BOSS: DER RIGGER
      ===================================================================== */
-  const rig = buildRigger(); scene.add(rig);
+  const rig = buildRigger(); rig.scale.setScalar(1.18); scene.add(rig);
   const RJ = rig.userData.J;
   const boss = { x: -5.4, z: TZ, y: TY, hp: 3, st: 'wait', t: 0, side: -1, k: 0, seq: 0, n: 0, flash: 0, ry: Math.PI / 2 };
   LV.boss = boss;
+  LV._test = () => ({ shackles, hooks: hookPool });
   const shackles = [], hooks = [];
   const starG = new THREE.Group(); scene.add(starG); starG.visible = false;
   for (let i = 0; i < 4; i++) { const s = new THREE.Mesh(new THREE.OctahedronGeometry(0.09), MAT.glowAmber); s.position.set(Math.cos(i * Math.PI / 2) * 0.38, 0, Math.sin(i * Math.PI / 2) * 0.38); starG.add(s); }
@@ -180,6 +193,7 @@ export function level2(G, LV) {
   LV.onRespawn = (full) => { if (boss.st !== 'wait' && boss.st !== 'defeat' && full) resetBoss(); };
 
   LV.update = (F, p) => {
+    { const prev = eOpen; eOpen = clamp(eOpen + (F > 22 ? 0.025 : 0), 0, 1); if (prev === 0 && eOpen > 0) sfx('ding', 0.9); eDoorSolid.y1 = eOpen > 0.8 ? 99 : 0; }
     boss.t++;
     const playing = G.state === 'play' && !p.dead && !p.won, dir = Math.sign(p.x - boss.x) || 1, k = boss.k;
     const onWalk = p.y > TY - 0.15 && p.z > WZ1 - 0.1;
@@ -211,11 +225,11 @@ export function level2(G, LV) {
         else if (boss.t < prep + dur + 14) { boss.y = lerp(boss.y, TY, 0.3); }
         else { boss.y = TY; boss.side = -boss.side; boss.st = 'tangled'; boss.t = 0; say(lines.tangled, 90); sfx('land', 1); G.burst(boss.x, TY + 0.1, boss.z, 'dust', 10); }
         // Beine treffen beim Durchschwingen
-        if (playing && boss.t >= prep && boss.t < prep + dur && Math.abs(p.x - boss.x) < 0.38 + G.R && Math.abs(p.z - boss.z) < 0.45 + G.R && p.y < boss.y + 1.0 && p.y + G.H > boss.y) G.hurt(Math.sign(p.x - boss.x || 1) * 0.3, 0);
+        if (playing && boss.t >= prep && boss.t < prep + dur && Math.abs(p.x - boss.x) < 0.38 + G.R && Math.abs(p.z - boss.z) < 0.45 + G.R && p.y < boss.y + 1.15 && p.y + G.H > boss.y) G.hurt(Math.sign(p.x - boss.x || 1) * 0.3, 0);
         break;
       }
       case 'tangled': {
-        if (playing && p.vy < 0 && Math.abs(p.x - boss.x) < 0.62 && Math.abs(p.z - boss.z) < 0.7 && p.y > TY + 0.8 && p.y < TY + 1.5) {
+        if (playing && p.vy < 0 && Math.abs(p.x - boss.x) < 0.62 && Math.abs(p.z - boss.z) < 0.7 && p.y > TY + 0.9 && p.y < TY + 1.85) {
           boss.hp--; boss.st = 'hit'; boss.t = 0; boss.flash = 20; G.bounce(1.15); sfx('stomp'); sfx('bosshit'); G.shake(0.35); G.burst(boss.x, TY + 1.4, boss.z, 'spark', 18);
           G.boss(true, 'DER RIGGER', boss.hp, 3); say(lines.hit[2 - boss.hp] || lines.hit[0], 90);
           if (boss.hp > 0) G.snack(0, TY, TZ);
@@ -232,8 +246,8 @@ export function level2(G, LV) {
       }
     }
     // Kontaktschaden
-    if (playing && ['throw', 'hooks', 'recover', 'intro', 'retry'].includes(boss.st) && Math.abs(p.x - boss.x) < 0.35 + G.R && Math.abs(p.z - boss.z) < 0.35 + G.R && p.y < boss.y + 1.95 && p.y + G.H > boss.y) {
-      if (p.vy < 0 && p.y > boss.y + 1.6) { G.bounce(0.9); sfx('bonk'); say('Finger weg vom Helm!', 60); } else G.hurt(Math.sign(p.x - boss.x || 1) * 0.35, 0);
+    if (playing && ['throw', 'hooks', 'recover', 'intro', 'retry'].includes(boss.st) && Math.abs(p.x - boss.x) < 0.35 + G.R && Math.abs(p.z - boss.z) < 0.35 + G.R && p.y < boss.y + 2.25 && p.y + G.H > boss.y) {
+      if (p.vy < 0 && p.y > boss.y + 1.95) { G.bounce(0.9); sfx('bonk'); say('Finger weg vom Helm!', 60); } else G.hurt(Math.sign(p.x - boss.x || 1) * 0.35, 0);
     }
     // Schäkel
     for (let i = shackles.length - 1; i >= 0; i--) {
@@ -251,10 +265,14 @@ export function level2(G, LV) {
     }
   };
 
-  LV.camera = (p) => {
+  LV.camera = (p, F) => {
+    if (F < 165 && boss.st === 'wait' && P.cp === 0) {   // Ankunft: Blick auf den Aufzug, dann Schwenk hinter den Hamster
+      const u = clamp((F - 92) / 70, 0, 1), e = u * u * (3 - 2 * u), th = e * Math.PI, r = 4.3 - e * 0.4, h = 1.45 + e * 0.7;
+      return { pos: new THREE.Vector3(p.x + Math.sin(th) * r * 0.9, p.y + h, p.z + Math.cos(th) * r), look: new THREE.Vector3(p.x * (1 - e * 0.3), p.y + 1.0 - e * 0.15, p.z + e * 3.4), snap: true };
+    }
     if (boss.st === 'wait' && !(p.y > TY - 1 && p.z > WZ1 - 1.4)) return null;
     const portrait = innerWidth < innerHeight, mid = clamp((p.x + (boss.st === 'defeat' ? 0 : boss.x)) / 2, -3.2, 3.2);
-    return { pos: new THREE.Vector3(mid, TY + (portrait ? 4.2 : 3.1), TZ - (portrait ? 14 : 9.6)), look: new THREE.Vector3(mid, TY + 0.9, TZ) };
+    return { pos: new THREE.Vector3(mid, TY + (portrait ? 3.4 : 2.5), TZ - (portrait ? 11.5 : 7.4)), look: new THREE.Vector3(mid, TY + 1.0, TZ + 0.6) };
   };
   LV.progress = p => boss.st === 'wait' ? Math.min(1, p.z / 62 * 0.85 + Math.max(0, p.y - 4) / 4.6 * 0.15) : (3 - boss.hp) / 3;
 
